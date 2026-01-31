@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+:root {
+  --navbar-height: calc(64px + env(safe-area-inset-top, 0px));
+  --btn-primary: #2b6fd8;
+  --btn-danger: #dc3545;
+  --btn-danger-hover: #c82333;
+  --dark: #0d101c;
+  --lighter-dark: #171b26;
+  --lighter: #212530;
+  --lightest-dark: #2e3139;
+  --light-text: #fcfcfc;
+  --dark-text: #8d9099;
+  --light-blue: #004060;
+  --dark-blue: #071319;
+  --orange: #ff7300;
+  --card-blue: #16425b;
+  --card-green: #153243;
+  --card-yellow: #ffa600;
+  --card-purple: #002d43;
+  --card-brown: #f1bc3e;
+  --font-color: #eef0eb;
+  --font-color-dark: #151515;
+}
+
+.light-mode {
+  --btn-primary: #2563eb;
+  --btn-danger: #dc3545;
+  --btn-danger-hover: #c82333;
+  --dark: #f0f0f0;
+  --lighter-dark: #fafafa;
+  --lighter: #efefef;
+  --lightest-dark: #ced4da;
+  --light-text: #110721;
+  --dark-text: #939393;
+  --light-blue: #004060;
+  --dark-blue: #122736;
+  --orange: #ff7300;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: var(--dark);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.schedules-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--dark-text) transparent;
+}
+.schedules-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.schedules-scroll::-webkit-scrollbar-thumb {
+  background: var(--dark-text);
+  border-radius: 4px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
