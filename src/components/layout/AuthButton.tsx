@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchWithCredentials } from '@/lib/api';
+import { API_BASE, fetchWithCredentials } from '@/lib/api';
 
 interface AuthState {
   name: string | null;
@@ -96,10 +96,12 @@ export function AuthButton({ menuItem = false, nameOnly = false }: AuthButtonPro
     );
   }
 
+  const loginHref = `${API_BASE}/Account/Login?returnUrl=${encodeURIComponent(window.location.origin + '/')}`;
+
   if (menuItem) {
     return (
       <a
-        href="/Account/Login?returnUrl=/"
+        href={loginHref}
         className={`${menuClass} hover:bg-[var(--lighter)]`}
         title="Sign in with Google"
       >
@@ -110,7 +112,7 @@ export function AuthButton({ menuItem = false, nameOnly = false }: AuthButtonPro
 
   return (
     <a
-      href="/Account/Login?returnUrl=/"
+      href={loginHref}
       className="inline-flex items-center min-h-[44px] gap-2 px-3 py-1.5 rounded-lg font-semibold text-white bg-[var(--btn-primary)] shadow-[0_8px_20px_rgba(43,111,216,0.18)] transition-colors duration-200 hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--light-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--dark)]"
       title="Sign in with Google"
     >
