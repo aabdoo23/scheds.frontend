@@ -14,8 +14,6 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': 'http://localhost:5254',
-      '/Account': 'http://localhost:5254',
-      '/signin-google': 'http://localhost:5254',
     },
   },
 })
