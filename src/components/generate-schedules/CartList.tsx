@@ -268,13 +268,13 @@ function CartItem({
                   {mainSectionDetails.map((d) => (
                     <label
                       key={d.section}
-                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-[var(--lighter-dark)] hover:bg-white/10"
+                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-white/10 hover:bg-white/20"
                     >
                       <input
                         type="checkbox"
                         checked={excludedMain.includes(d.section)}
                         onChange={() => toggleExcludedMain(d.section)}
-                        className="rounded"
+                        className="rounded accent-white bg-white/10 border border-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                       />
                       <span>
                         {d.section}
@@ -305,13 +305,13 @@ function CartItem({
                   {subSectionDetails.map((d) => (
                     <label
                       key={d.section}
-                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-[var(--lighter-dark)] hover:bg-white/10"
+                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-white/10 hover:bg-white/20"
                     >
                       <input
                         type="checkbox"
                         checked={excludedSub.includes(d.section)}
                         onChange={() => toggleExcludedSub(d.section)}
-                        className="rounded"
+                        className="rounded accent-white bg-white/10 border border-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                       />
                       <span>
                         {d.section}
@@ -342,13 +342,13 @@ function CartItem({
                   {professors.map((p) => (
                     <label
                       key={p}
-                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-[var(--lighter-dark)] hover:bg-white/10"
+                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-white/10 hover:bg-white/20"
                     >
                       <input
                         type="checkbox"
                         checked={excludedProfessors.includes(p)}
                         onChange={() => toggleExcludedProfessor(p)}
-                        className="rounded"
+                        className="rounded accent-white bg-white/10 border border-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                       />
                       {p}
                     </label>
@@ -372,13 +372,13 @@ function CartItem({
                   {tas.map((t) => (
                     <label
                       key={t}
-                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-[var(--lighter-dark)] hover:bg-white/10"
+                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-white/10 hover:bg-white/20"
                     >
                       <input
                         type="checkbox"
                         checked={excludedTas.includes(t)}
                         onChange={() => toggleExcludedTa(t)}
-                        className="rounded"
+                        className="rounded accent-white bg-white/10 border border-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                       />
                       {t}
                     </label>
