@@ -205,10 +205,10 @@ function CartItem({
   const excludeAllTas = () => onUpdate({ ...item, excludedTAs: tas });
 
   return (
-    <li className="py-4 px-4 bg-[var(--light-blue)] text-white rounded-lg mb-2.5 transition-colors hover:bg-[var(--dark-blue)]">
-      <div className="flex justify-between items-start gap-2">
+    <li className="py-3 px-4 bg-[var(--light-blue)] text-white rounded-lg mb-2.5 transition-colors hover:bg-[var(--dark-blue)]">
+      <div className="flex justify-between items-center gap-2">
         <div className="flex-1 min-w-0">
-          <p className="m-0 text-base">
+          <p className="m-0 text-base leading-snug">
             <strong>
               {item.courseCode}: {item.courseName}
             </strong>
@@ -217,7 +217,10 @@ function CartItem({
             )}
           </p>
           {hasCustomSelection && customDetails.length > 0 && (
-            <p className="m-0 mt-1 text-[0.8rem] opacity-90 line-clamp-2" title={customDetails.join(' · ')}>
+            <p
+              className="m-0 mt-0.5 text-[0.8rem] leading-snug opacity-90 line-clamp-2"
+              title={customDetails.join(' · ')}
+            >
               {customDetails.join(' · ')}
             </p>
           )}
@@ -228,7 +231,7 @@ function CartItem({
             onClick={() => setExpanded((e) => !e)}
             aria-expanded={expanded}
             aria-label={`Customize sections for ${item.courseCode}`}
-            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center bg-transparent border-none text-inherit cursor-pointer opacity-80 hover:opacity-100 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="p-1.5 min-w-[40px] min-h-[40px] flex items-center justify-center bg-transparent border-none text-inherit cursor-pointer opacity-80 hover:opacity-100 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             <i className="fas fa-cog" aria-hidden />
           </button>
@@ -236,7 +239,7 @@ function CartItem({
             type="button"
             onClick={onRemove}
             aria-label={`Remove ${item.courseCode} from cart`}
-            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center bg-transparent border-none text-inherit cursor-pointer opacity-80 hover:opacity-100 hover:bg-white/20 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="p-1.5 min-w-[40px] min-h-[40px] flex items-center justify-center bg-transparent border-none text-inherit cursor-pointer opacity-80 hover:opacity-100 hover:bg-white/20 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             <i className="fas fa-times" aria-hidden />
           </button>
@@ -265,13 +268,13 @@ function CartItem({
                   {mainSectionDetails.map((d) => (
                     <label
                       key={d.section}
-                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-[var(--lighter-dark)] hover:bg-white/10"
+                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-white/10 hover:bg-white/20"
                     >
                       <input
                         type="checkbox"
                         checked={excludedMain.includes(d.section)}
                         onChange={() => toggleExcludedMain(d.section)}
-                        className="rounded"
+                        className="rounded accent-white bg-white/10 border border-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                       />
                       <span>
                         {d.section}
@@ -302,13 +305,13 @@ function CartItem({
                   {subSectionDetails.map((d) => (
                     <label
                       key={d.section}
-                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-[var(--lighter-dark)] hover:bg-white/10"
+                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-white/10 hover:bg-white/20"
                     >
                       <input
                         type="checkbox"
                         checked={excludedSub.includes(d.section)}
                         onChange={() => toggleExcludedSub(d.section)}
-                        className="rounded"
+                        className="rounded accent-white bg-white/10 border border-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                       />
                       <span>
                         {d.section}
@@ -339,13 +342,13 @@ function CartItem({
                   {professors.map((p) => (
                     <label
                       key={p}
-                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-[var(--lighter-dark)] hover:bg-white/10"
+                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-white/10 hover:bg-white/20"
                     >
                       <input
                         type="checkbox"
                         checked={excludedProfessors.includes(p)}
                         onChange={() => toggleExcludedProfessor(p)}
-                        className="rounded"
+                        className="rounded accent-white bg-white/10 border border-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                       />
                       {p}
                     </label>
@@ -369,13 +372,13 @@ function CartItem({
                   {tas.map((t) => (
                     <label
                       key={t}
-                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-[var(--lighter-dark)] hover:bg-white/10"
+                      className="flex items-center gap-2 cursor-pointer text-[0.9rem] py-1 px-2 rounded bg-white/10 hover:bg-white/20"
                     >
                       <input
                         type="checkbox"
                         checked={excludedTas.includes(t)}
                         onChange={() => toggleExcludedTa(t)}
-                        className="rounded"
+                        className="rounded accent-white bg-white/10 border border-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                       />
                       {t}
                     </label>
