@@ -7,9 +7,14 @@ import {
   type ReactNode,
 } from 'react';
 import { googleLogout } from '@react-oauth/google';
-import { API_BASE } from '@/lib/api';
-
-const TOKEN_KEY = 'scheds_token';
+import {
+  getAccessToken,
+  getRefreshToken,
+  setTokens,
+  clearTokens,
+  addListener,
+} from '@/lib/authStorage';
+import { API_BASE, fetchWithCredentials } from '@/lib/api';
 
 interface AuthState {
   token: string | null;
@@ -27,79 +32,83 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTokenState] = useState<string | null>(() =>
-    sessionStorage.getItem(TOKEN_KEY)
+    getAccessToken()
   );
   const [user, setUser] = useState<{ name: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const setToken = useCallback((value: string | null) => {
-    setTokenState(value);
-    if (value) {
-      sessionStorage.setItem(TOKEN_KEY, value);
-    } else {
-      sessionStorage.removeItem(TOKEN_KEY);
-    }
-  }, []);
-
   const fetchUser = useCallback(async () => {
-    const t = sessionStorage.getItem(TOKEN_KEY);
-    if (!t) {
+    if (!getAccessToken()) {
       setUser(null);
       return;
     }
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${t}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data);
-      } else {
-        setUser(null);
-        setToken(null);
-      }
-    } catch {
+    const res = await fetchWithCredentials('/api/auth/me');
+    if (res.ok) {
+      const data = await res.json();
+      setUser(data);
+    } else {
       setUser(null);
-      setToken(null);
+      if (!getAccessToken()) setTokenState(null);
     }
-  }, [setToken]);
+  }, []);
 
   const handleGoogleSuccess = useCallback(
     async (credential: string) => {
-      try {
-        const res = await fetch(`${API_BASE}/api/auth/google`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idToken: credential }),
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        setToken(data.accessToken);
-        await fetchUser();
-      } catch {
-        setToken(null);
-      }
+      const res = await fetch(`${API_BASE}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: credential }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setTokens(data.accessToken, data.refreshToken);
+      await fetchUser();
     },
-    [setToken, fetchUser]
+    [fetchUser]
   );
 
   useEffect(() => {
-    if (token) {
+    return addListener(() => {
+      const next = getAccessToken();
+      setTokenState(next);
+      if (!next) setUser(null);
+    });
+  }, []);
+
+  useEffect(() => {
+    const access = getAccessToken();
+    const refresh = getRefreshToken();
+    if (access) {
       fetchUser().finally(() => setLoading(false));
+    } else if (refresh) {
+      fetch(`${API_BASE}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: refresh }),
+        credentials: 'include',
+      })
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((data) => {
+          setTokens(data.accessToken);
+          return fetchUser();
+        })
+        .catch(() => setTokenState(null))
+        .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, [token, fetchUser]);
+  }, [fetchUser]);
 
   const refreshUser = useCallback(async () => {
-    if (token) await fetchUser();
-  }, [token, fetchUser]);
+    if (getAccessToken()) await fetchUser();
+  }, [fetchUser]);
 
   const logout = useCallback(() => {
     googleLogout();
-    setToken(null);
+    clearTokens();
+    setTokenState(null);
     setUser(null);
-  }, [setToken]);
+  }, []);
 
   const value: AuthContextValue = {
     token,
