@@ -8,7 +8,7 @@ React + TypeScript + Tailwind CSS + Vite frontend for Scheds.
 2. Start the frontend: `npm run dev`
 3. Open http://localhost:5173
 
-The Vite dev server proxies `/api`, `/Account`, and `/signin-google` to the backend at http://localhost:5254.
+The Vite dev server proxies `/api` to the backend at http://localhost:5254.
 
 ## Build
 

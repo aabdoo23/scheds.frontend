@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { Navbar } from '@/components/layout/Navbar';
 import { HomePage } from '@/pages/HomePage';
 import { FindStudyRoomsPage } from '@/pages/FindStudyRoomsPage';
@@ -13,6 +14,7 @@ import { AdminGenerationDetailsPage } from '@/pages/AdminGenerationDetailsPage';
 
 function App() {
   return (
+    <AuthProvider>
     <BrowserRouter>
       <Navbar />
       <div className="pt-[var(--navbar-height)] min-h-screen">
@@ -30,6 +32,7 @@ function App() {
         </Routes>
       </div>
     </BrowserRouter>
+    </AuthProvider>
   );
 }
 

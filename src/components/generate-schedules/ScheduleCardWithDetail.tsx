@@ -90,7 +90,7 @@ export function ScheduleCardWithDetail({
       >
         <article
           onClick={handleClick}
-          className="flex flex-col w-full rounded-xl overflow-hidden shadow transition-all duration-300 hover:shadow-lg focus-within:ring-2 focus-within:ring-[var(--light-blue)] focus-within:ring-offset-2 focus-within:ring-offset-[var(--lighter-dark)] cursor-pointer bg-white text-[var(--lighter-dark)]"
+          className="flex flex-col w-full rounded-xl overflow-hidden shadow transition-all duration-300 hover:shadow-lg focus-within:ring-2 focus-within:ring-[var(--light-blue)] focus-within:ring-offset-2 focus-within:ring-offset-[var(--lighter-dark)] cursor-pointer bg-[var(--lighter-dark)] text-[var(--light-text)]"
           aria-expanded={expanded}
           aria-label={`${item.courseCode} ${item.courseName}, ${item.subType} ${item.section}. ${expanded ? 'Expanded' : 'Tap to view details'}.`}
         >
@@ -100,7 +100,7 @@ export function ScheduleCardWithDetail({
             style={{ gridTemplateRows: expanded ? '1fr' : '0fr' }}
           >
             <div className="overflow-hidden">
-              <div className="py-2 px-3 border-b border-[var(--lighter-dark)]/20 bg-white">
+              <div className="py-2 px-3 border-b border-[var(--lightest-dark)]/50 bg-[var(--lighter-dark)]">
                 <div className="flex flex-col gap-0.5 text-sm">
                   <span className="font-bold">Seats Left: {item.seatsLeft}</span>
                   <span className="font-medium">Credits: {item.credits} CH</span>
@@ -110,9 +110,9 @@ export function ScheduleCardWithDetail({
           </div>
 
           {/* Middle section: always visible - Course code, name, instructor */}
-          <div className="flex flex-col gap-0.5 px-3 py-2.5 min-h-[48px] shrink-0 bg-[var(--lighter-dark)]/10">
+          <div className="flex flex-col gap-0.5 px-3 py-2.5 min-h-[48px] shrink-0 bg-[var(--lighter)]">
             <div
-              className={`font-bold overflow-hidden text-ellipsis leading-tight text-[var(--lighter-dark)] ${
+              className={`font-bold overflow-hidden text-ellipsis leading-tight text-[var(--light-text)] ${
                 compact ? 'text-[0.85em] line-clamp-1' : 'text-[0.9em] line-clamp-2'
               }`}
             >
@@ -127,7 +127,7 @@ export function ScheduleCardWithDetail({
             style={{ gridTemplateRows: expanded ? '1fr' : '0fr' }}
           >
             <div className="overflow-hidden">
-              <div className="py-2 px-3 border-t border-[var(--lighter-dark)]/20 bg-white">
+              <div className="py-2 px-3 border-t border-[var(--lightest-dark)]/50 bg-[var(--lighter-dark)]">
                 <div className="flex flex-col gap-1 text-[0.85em]">
                   {item.day ? (
                     <>
@@ -148,7 +148,7 @@ export function ScheduleCardWithDetail({
           </div>
 
           {/* Footer: always visible */}
-          <div className="flex justify-center items-center py-2 px-3 bg-[var(--light-blue)] text-[var(--light-text)] font-semibold text-sm min-h-[44px] shrink-0">
+          <div className="flex justify-center items-center py-2 px-3 bg-[var(--light-blue)] text-white font-semibold text-sm min-h-[44px] shrink-0">
             {item.subType} - {item.section}
           </div>
         </article>
