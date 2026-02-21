@@ -3,7 +3,7 @@ import { GITHUB_REPOS } from '@/components/layout/navConfig';
 
 const CACHE_KEY = 'scheds_contributors_v3';
 const CACHE_TTL_MS = 60 * 60 * 1000;
-const STATS_202_RETRY_MS = 2500;
+const STATS_202_RETRY_MS = 4000;
 
 export type RepoStats = {
   additions: number;
