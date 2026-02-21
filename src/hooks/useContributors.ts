@@ -3,8 +3,7 @@ import { GITHUB_REPOS } from '@/components/layout/navConfig';
 
 const CACHE_KEY = 'scheds_contributors_v3';
 const CACHE_TTL_MS = 60 * 60 * 1000;
-const STATS_202_DELAY_MS = 2500;
-const STATS_202_MAX_ATTEMPTS = 3;
+const STATS_202_RETRY_MS = 2500;
 
 export type RepoStats = {
   additions: number;
@@ -36,15 +35,6 @@ function contributorsApiUrl(href: string): string {
   return href.replace('https://github.com/', 'https://api.github.com/repos/') + '/contributors?per_page=100';
 }
 
-const GITHUB_FETCH_OPTIONS: RequestInit = {
-  headers: {
-    Accept: 'application/vnd.github+json',
-    ...(import.meta.env.VITE_GITHUB_TOKEN && {
-      Authorization: `Bearer ${import.meta.env.VITE_GITHUB_TOKEN}`,
-    }),
-  },
-};
-
 type SimpleContributor = { login: string; avatar_url: string; html_url: string; contributions: number };
 
 function sumWeeks(weeks: GitHubStatsContributor['weeks'] | undefined): RepoStats {
@@ -61,20 +51,19 @@ function sumWeeks(weeks: GitHubStatsContributor['weeks'] | undefined): RepoStats
 }
 
 async function fetchStatsWithRetry(url: string, repoLabel: string): Promise<GitHubStatsContributor[]> {
-  for (let attempt = 0; attempt < STATS_202_MAX_ATTEMPTS; attempt++) {
-    const res = await fetch(url, GITHUB_FETCH_OPTIONS);
-    if (res.status === 204) return [];
-    if (res.status === 202) {
-      await new Promise((r) => setTimeout(r, STATS_202_DELAY_MS));
-      continue;
-    }
-    if (res.status === 200) {
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
-    }
-    throw new Error(`${repoLabel}: GitHub ${res.status}`);
+  const res = await fetch(url);
+  if (res.status === 204) return [];
+  if (res.status === 202) {
+    await new Promise((r) => setTimeout(r, STATS_202_RETRY_MS));
+    const retry = await fetch(url);
+    if (retry.status === 204) return [];
+    if (!retry.ok) throw new Error(`${repoLabel}: GitHub ${retry.status}`);
+    const data = await retry.json();
+    return Array.isArray(data) ? data : [];
   }
-  throw new Error(`${repoLabel}: GitHub stats not ready after ${STATS_202_MAX_ATTEMPTS} attempts`);
+  if (!res.ok) throw new Error(`${repoLabel}: GitHub ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
 }
 
 function loadFromCache(): Contributor[] | null {
@@ -146,7 +135,7 @@ export function useContributors() {
 
         if (merged.length === 0) {
           const simpleFetches = GITHUB_REPOS.map((repo) =>
-            fetch(contributorsApiUrl(repo.href), GITHUB_FETCH_OPTIONS)
+            fetch(contributorsApiUrl(repo.href))
               .then((r) => (r.status === 204 ? [] : r.ok ? r.json() : Promise.reject(new Error(`${repo.label}: ${r.status}`))))
               .then((data: unknown) => ({ label: repo.label, arr: Array.isArray(data) ? data as SimpleContributor[] : [] }))
           );
