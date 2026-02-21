@@ -1,10 +1,17 @@
-export const NAV_ITEMS = [
-  { to: '/generate-schedules', label: 'Generate Schedules', shortLabel: 'Generate' },
+export type NavItem = {
+  to: string;
+  label: string;
+  shortLabel?: string;
+  primary?: boolean;
+};
+
+export const NAV_ITEMS: NavItem[] = [
+  { to: '/generate-schedules', label: 'Generate Schedules', shortLabel: 'Generate', primary: true },
   { to: '/self-service-search', label: 'Self Service Search', shortLabel: 'Search' },
   { to: '/seat-moderation', label: 'Seat Moderation', shortLabel: 'Moderation' },
   { to: '/find-study-rooms', label: 'Find Study Rooms', shortLabel: 'Rooms' },
   { to: '/contributors', label: 'Contributors', shortLabel: 'Contributors' },
-] as const;
+];
 
 const GITHUB_ORG = 'aabdoo23';
 

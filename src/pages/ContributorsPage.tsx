@@ -82,53 +82,139 @@ function ContributorCard({
   );
 }
 
-function TopPodium({ contributors }: { contributors: Contributor[] }) {
-  const [first, second, third, fourth] = contributors;
-  if (!first && !second && !third && !fourth) return null;
+const CENTER = 50;
+const GOLDEN_ANGLE = (137.5 * Math.PI) / 180;
+const BASE_RADIUS = 24;
+const RADIUS_SPREAD = 8;
 
-  const place = (c: Contributor | undefined, height: string) =>
-    c ? (
-      <div className={`flex flex-col items-center ${height}`}>
-        <img
-          src={c.avatar_url}
-          alt=""
-          className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover ring-4 ring-[var(--lighter)] mb-2"
-        />
-        <a
-          href={c.html_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-semibold text-[var(--light-text)] hover:underline"
-        >
-          {c.login}
-        </a>
-        <span className="text-sm text-[var(--dark-text)]">{c.contributions} commits</span>
-        <div className="mt-2 w-full max-w-[100px] h-2 rounded-full bg-[var(--lighter-dark)] overflow-hidden">
-          <div
-            className="h-full rounded-full bg-[var(--orange)]"
-            style={{
-              width: `${contributors[0] ? (c.contributions / contributors[0].contributions) * 100 : 0}%`,
-            }}
-          />
-        </div>
-      </div>
-    ) : (
-      <div className={`flex flex-col items-center justify-end ${height}`}>
-        <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-[var(--lighter-dark)] mb-2" />
-        <span className="text-sm text-[var(--dark-text)]">—</span>
-      </div>
-    );
+function getNodePositions(n: number): Array<{ left: number; top: number }> {
+  return Array.from({ length: n }, (_, i) => {
+    const angle = i * GOLDEN_ANGLE;
+    const radius = BASE_RADIUS + (i % 3) * RADIUS_SPREAD;
+    return {
+      left: CENTER + radius * Math.cos(angle),
+      top: CENTER + radius * Math.sin(angle),
+    };
+  });
+}
+
+function ContributorsGraph({
+  contributors,
+  maxContributions,
+}: {
+  contributors: Contributor[];
+  maxContributions: number;
+}) {
+  if (contributors.length === 0) return null;
+
+  const positions = getNodePositions(contributors.length);
 
   return (
-    <div className="w-full max-w-[500px] mx-auto ">
+    <div className="w-full max-w-[700px] mx-auto mb-8">
       <h2 className="text-xl font-semibold text-[var(--light-text)] mb-4 text-center">
-        Our Top contributors
+        Our contributors
       </h2>
-      <div className="flex items-end justify-center gap-2 md:gap-4">
-        {place(second, 'pb-8 md:pb-10 order-1')}
-        {place(first, 'pb-4 md:pb-6 order-2')}
-        {place(third, 'pb-12 md:pb-14 order-3')}
-        {place(fourth, 'pb-16 md:pb-8 order-4')}
+      <div
+        className="relative w-full overflow-visible"
+        style={{ minHeight: '360px' }}
+      >
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+        >
+          {positions.map((pos, i) => (
+            <line
+              key={i}
+              x1={CENTER}
+              y1={CENTER}
+              x2={pos.left}
+              y2={pos.top}
+              stroke="var(--lighter-dark)"
+              strokeWidth={0.4}
+            />
+          ))}
+        </svg>
+
+        <div
+          className="absolute flex flex-col items-center gap-1.5"
+          style={{
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+          }}
+        >
+          <img
+            src="/images/logo-new.png"
+            alt=""
+            className="w-12 h-12 object-contain"
+          />
+          <span className="font-semibold text-sm text-[var(--light-text)]">
+            Scheds
+          </span>
+        </div>
+
+        {contributors.map((c, i) => {
+          const pos = positions[i];
+          const isManual = !!c.role;
+          const barPct =
+            maxContributions > 0 ? (c.contributions / maxContributions) * 100 : 0;
+
+          const nodeContent = (
+            <div className="flex flex-col items-center text-center">
+              <img
+                src={c.avatar_url}
+                alt=""
+                className="w-12 h-12 rounded-full object-cover ring-2 ring-[var(--lighter)] shrink-0 mb-1"
+              />
+              {c.html_url ? (
+                <a
+                  href={c.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-sm text-[var(--light-text)] hover:underline truncate max-w-[90px]"
+                >
+                  {c.login}
+                </a>
+              ) : (
+                <span className="font-semibold text-sm text-[var(--light-text)] truncate max-w-[90px]">
+                  {c.login}
+                </span>
+              )}
+              {isManual ? (
+                <span className="text-xs text-[var(--dark-text)] truncate max-w-[90px]">
+                  {c.role}
+                </span>
+              ) : (
+                <>
+                  <span className="text-xs text-[var(--dark-text)]">
+                    {c.contributions} commits
+                  </span>
+                  <div className="mt-1 w-14 h-1.5 rounded-full bg-[var(--lighter-dark)] overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-[var(--orange)]"
+                      style={{ width: `${barPct}%` }}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          );
+
+          return (
+            <div
+              key={c.login}
+              className="absolute"
+              style={{
+                left: `${pos.left}%`,
+                top: `${pos.top}%`,
+                transform: 'translate(-50%, -50%)',
+              }}
+            >
+              {nodeContent}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -251,9 +337,8 @@ export function ContributorsPage() {
               </div>
             )}
 
-            <TopPodium contributors={contributors} />
+            <ContributorsGraph contributors={displayList} maxContributions={maxContributions} />
             
-            <h2 className="text-xl font-semibold text-[var(--light-text)] mb-4">Everyone</h2>
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               {displayList.map((c) => (
                 <ContributorCard

@@ -19,7 +19,7 @@ export function Navbar() {
   const location = useLocation();
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
-  const linksRef = useRef<HTMLLIElement>(null);
+  const linksRef = useRef<HTMLDivElement>(null);
 
   const closeMenu = useCallback(() => setMobileOpen(false), []);
 
@@ -115,17 +115,15 @@ export function Navbar() {
 
       {/* Desktop nav */}
       <div className="hidden md:flex items-center gap-3 min-h-[44px]">
-        <ThemeToggle />
         <ul className="flex items-center gap-1 m-0 p-0 list-none">
-          {NAV_ITEMS.map(({ to, label, shortLabel }) => {
-            const isPrimary = to === '/generate-schedules';
+          {NAV_ITEMS.map(({ to, label, shortLabel, primary }) => {
             return (
-              <li key={to}>
+              <li key={to} className={primary ? 'mr-2' : undefined}>
                 <NavLink
                   to={to}
                   aria-label={label}
                   className={({ isActive }) =>
-                    `${linkBase} ${isPrimary ? 'bg-[var(--light-blue)] text-white hover:bg-[var(--light-blue)]/90' : ''} ${!isPrimary && isActive ? linkActive : ''} ${isPrimary && isActive ? 'ring-2 ring-white/30' : ''}`
+                    `${linkBase} ${primary ? 'bg-[var(--light-blue)] text-white hover:bg-[var(--light-blue)]/90' : ''} ${!primary && isActive ? linkActive : ''} ${primary && isActive ? 'ring-2 ring-white/30' : ''}`
                   }
                 >
                   {shortLabel ?? label}
@@ -133,17 +131,20 @@ export function Navbar() {
               </li>
             );
           })}
-          <li ref={linksRef} className="relative flex items-center">
+        </ul>
+        <div className="flex items-center gap-1 border-l border-[var(--lighter)] pl-3">
+          <div ref={linksRef} className="relative flex items-center">
             <button
               type="button"
               onClick={() => setLinksOpen((o) => !o)}
               aria-expanded={linksOpen}
               aria-haspopup="true"
-              aria-label="Links"
-              title="Links"
-              className={`flex items-center justify-center min-w-[44px] min-h-[44px] p-2 text-[var(--light-text)] rounded-lg transition-colors duration-200 hover:bg-[var(--lighter)] ${focusRing}`}
+              aria-label="External links and repositories"
+              title="External links and repositories"
+              className={`flex items-center justify-center gap-1 min-w-[44px] min-h-[44px] px-2 text-[var(--light-text)] rounded-lg transition-colors duration-200 hover:bg-[var(--lighter)] ${focusRing}`}
             >
               <i className="fas fa-link text-xl" />
+              <i className={`fas fa-chevron-down text-xs transition-transform duration-200 ${linksOpen ? 'rotate-180' : ''}`} aria-hidden />
             </button>
             {linksOpen && (
               <div
@@ -180,11 +181,10 @@ export function Navbar() {
                 ))}
               </div>
             )}
-          </li>
-          <li className="flex items-center">
-            <AuthButton />
-          </li>
-        </ul>
+          </div>
+          <ThemeToggle />
+          <AuthButton />
+        </div>
       </div>
 
       {/* Mobile: ThemeToggle + username + hamburger */}
@@ -225,8 +225,7 @@ export function Navbar() {
           className="flex flex-col gap-1 p-4 overflow-y-auto max-h-[calc(100vh-var(--navbar-height))]"
           onClick={(e) => e.stopPropagation()}
         >
-          {NAV_ITEMS.map(({ to, label }) => {
-            const isPrimary = to === '/generate-schedules';
+          {NAV_ITEMS.map(({ to, label, primary }) => {
             return (
               <NavLink
                 key={to}
@@ -237,7 +236,7 @@ export function Navbar() {
                 }}
                 className={({ isActive }) =>
                   `block py-3 px-4 rounded-lg font-semibold text-lg transition-colors duration-200 ${
-                    isPrimary
+                    primary
                       ? 'bg-[var(--light-blue)] text-white hover:bg-[var(--light-blue)]/90'
                       : `text-[var(--light-text)] ${isActive ? 'bg-[var(--lighter)]' : 'hover:bg-[var(--lighter)]'}`
                   } ${focusRing}`
@@ -247,6 +246,7 @@ export function Navbar() {
               </NavLink>
             );
           })}
+          <hr className="border-[var(--lighter)] my-2" aria-hidden />
           <h2 className="text-sm font-semibold text-[var(--dark-text)] uppercase tracking-wide pt-4 pb-2 px-4">
             Links
           </h2>
