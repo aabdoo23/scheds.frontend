@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 import { AuthButton } from './AuthButton';
-import { NAV_ITEMS, EXTERNAL_LINKS } from './navConfig';
+import { NAV_ITEMS, EXTERNAL_LINKS, GITHUB_REPOS } from './navConfig';
 
 const linkBase =
   'inline-flex items-center min-h-[44px] no-underline text-[var(--light-text)] text-base font-semibold px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-[var(--lighter)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--light-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--dark)]';
@@ -15,9 +15,11 @@ const FOCUSABLE_SELECTOR =
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [linksOpen, setLinksOpen] = useState(false);
   const location = useLocation();
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const linksRef = useRef<HTMLLIElement>(null);
 
   const closeMenu = useCallback(() => setMobileOpen(false), []);
 
@@ -71,6 +73,23 @@ export function Navbar() {
     focusable?.focus();
   }, [mobileOpen]);
 
+  useEffect(() => {
+    if (!linksOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLinksOpen(false);
+    };
+    const handleClick = (e: MouseEvent) => {
+      if (linksRef.current?.contains(e.target as Node)) return;
+      setLinksOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('click', handleClick, true);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('click', handleClick, true);
+    };
+  }, [linksOpen]);
+
   return (
     <>
     <nav
@@ -98,32 +117,70 @@ export function Navbar() {
       <div className="hidden md:flex items-center gap-3 min-h-[44px]">
         <ThemeToggle />
         <ul className="flex items-center gap-1 m-0 p-0 list-none">
-          {NAV_ITEMS.map(({ to, label }) => (
-            <li key={to}>
-              <NavLink
-                to={to}
-                className={({ isActive }) =>
-                  `${linkBase} ${isActive ? linkActive : ''}`
-                }
+          {NAV_ITEMS.map(({ to, label, shortLabel }) => {
+            const isPrimary = to === '/generate-schedules';
+            return (
+              <li key={to}>
+                <NavLink
+                  to={to}
+                  aria-label={label}
+                  className={({ isActive }) =>
+                    `${linkBase} ${isPrimary ? 'bg-[var(--light-blue)] text-white hover:bg-[var(--light-blue)]/90' : ''} ${!isPrimary && isActive ? linkActive : ''} ${isPrimary && isActive ? 'ring-2 ring-white/30' : ''}`
+                  }
+                >
+                  {shortLabel ?? label}
+                </NavLink>
+              </li>
+            );
+          })}
+          <li ref={linksRef} className="relative flex items-center">
+            <button
+              type="button"
+              onClick={() => setLinksOpen((o) => !o)}
+              aria-expanded={linksOpen}
+              aria-haspopup="true"
+              aria-label="Links"
+              title="Links"
+              className={`flex items-center justify-center min-w-[44px] min-h-[44px] p-2 text-[var(--light-text)] rounded-lg transition-colors duration-200 hover:bg-[var(--lighter)] ${focusRing}`}
+            >
+              <i className="fas fa-link text-xl" />
+            </button>
+            {linksOpen && (
+              <div
+                role="menu"
+                className="absolute top-full right-0 mt-1 py-1 min-w-[160px] rounded-lg bg-[var(--dark)] border border-[var(--lighter)] shadow-lg [&>a:first-child]:rounded-t-[7px] [&>a:last-child]:rounded-b-[7px]"
               >
-                {label}
-              </NavLink>
-            </li>
-          ))}
-          {EXTERNAL_LINKS.map(({ href, label, icon }) => (
-            <li key={href}>
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={label}
-                title={label}
-                className={`flex items-center justify-center min-w-[44px] min-h-[44px] p-2 text-[var(--light-text)] rounded-lg transition-colors duration-200 hover:bg-[var(--lighter)] ${focusRing}`}
-              >
-                <i className={`${icon.startsWith('fab') ? icon : `fas ${icon}`} text-xl`} />
-              </a>
-            </li>
-          ))}
+                {GITHUB_REPOS.map(({ href, label }) => (
+                  <a
+                    key={href}
+                    role="menuitem"
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 text-[var(--light-text)] text-sm font-medium hover:bg-[var(--lighter)]"
+                    onClick={() => setLinksOpen(false)}
+                  >
+                    <i className="fab fa-github w-4" />
+                    {label}
+                  </a>
+                ))}
+                {EXTERNAL_LINKS.map(({ href, label, icon }) => (
+                  <a
+                    key={href}
+                    role="menuitem"
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 text-[var(--light-text)] text-sm font-medium hover:bg-[var(--lighter)]"
+                    onClick={() => setLinksOpen(false)}
+                  >
+                    <i className={`${icon.startsWith('fab') ? icon : `fas ${icon}`} w-4`} />
+                    {label}
+                  </a>
+                ))}
+              </div>
+            )}
+          </li>
           <li className="flex items-center">
             <AuthButton />
           </li>
@@ -168,22 +225,46 @@ export function Navbar() {
           className="flex flex-col gap-1 p-4 overflow-y-auto max-h-[calc(100vh-var(--navbar-height))]"
           onClick={(e) => e.stopPropagation()}
         >
-          {NAV_ITEMS.map(({ to, label }) => (
-            <NavLink
-              key={to}
-              to={to}
+          {NAV_ITEMS.map(({ to, label }) => {
+            const isPrimary = to === '/generate-schedules';
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                onClick={() => {
+                  closeMenu();
+                  hamburgerRef.current?.focus();
+                }}
+                className={({ isActive }) =>
+                  `block py-3 px-4 rounded-lg font-semibold text-lg transition-colors duration-200 ${
+                    isPrimary
+                      ? 'bg-[var(--light-blue)] text-white hover:bg-[var(--light-blue)]/90'
+                      : `text-[var(--light-text)] ${isActive ? 'bg-[var(--lighter)]' : 'hover:bg-[var(--lighter)]'}`
+                  } ${focusRing}`
+                }
+              >
+                {label}
+              </NavLink>
+            );
+          })}
+          <h2 className="text-sm font-semibold text-[var(--dark-text)] uppercase tracking-wide pt-4 pb-2 px-4">
+            Links
+          </h2>
+          {GITHUB_REPOS.map(({ href, label }) => (
+            <a
+              key={href}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={() => {
                 closeMenu();
                 hamburgerRef.current?.focus();
               }}
-              className={({ isActive }) =>
-                `block py-3 px-4 rounded-lg text-[var(--light-text)] font-semibold text-lg transition-colors duration-200 ${
-                  isActive ? 'bg-[var(--lighter)]' : 'hover:bg-[var(--lighter)]'
-                } ${focusRing}`
-              }
+              className={`flex items-center gap-3 py-3 px-4 rounded-lg text-[var(--light-text)] font-semibold text-lg transition-colors duration-200 hover:bg-[var(--lighter)] ${focusRing}`}
             >
+              <i className="fab fa-github text-xl w-6" />
               {label}
-            </NavLink>
+            </a>
           ))}
           {EXTERNAL_LINKS.map(({ href, label, icon }) => (
             <a

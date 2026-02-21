@@ -11,6 +11,7 @@ import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
 import { AdminAnalyticsPage } from '@/pages/AdminAnalyticsPage';
 import { AdminGenerationsPage } from '@/pages/AdminGenerationsPage';
 import { AdminGenerationDetailsPage } from '@/pages/AdminGenerationDetailsPage';
+import { ContributorsPage } from '@/pages/ContributorsPage';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/self-service-search" element={<SelfServiceSearchPage />} />
         <Route path="/seat-moderation" element={<SeatModerationPage />} />
         <Route path="/find-study-rooms" element={<FindStudyRoomsPage />} />
+        <Route path="/contributors" element={<ContributorsPage />} />
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
