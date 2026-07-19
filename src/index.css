@@ -2,9 +2,9 @@
 
 :root {
   --navbar-height: calc(64px + env(safe-area-inset-top, 0px));
-  --btn-primary: #2b6fd8;
   --btn-danger: #dc3545;
   --btn-danger-hover: #c82333;
+  --success: #28a745;
   --dark: #0d101c;
   --lighter-dark: #171b26;
   --lighter: #212530;
@@ -14,17 +14,21 @@
   --light-blue: #004060;
   --dark-blue: #071319;
   --orange: #ff7300;
-  --card-blue: #16425b;
-  --card-green: #153243;
-  --card-yellow: #ffa600;
-  --card-purple: #002d43;
-  --card-brown: #f1bc3e;
+  /* Categorical course palette: eight perceptually distinct hues so a course is
+     trackable by color across the timetable (incl. common color-vision types). */
+  --card-blue: #1e4fa3;
+  --card-green: #1c6b3f;
+  --card-yellow: #f5b301;
+  --card-purple: #5b3a8a;
+  --card-brown: #d98a5b;
+  --card-cyan: #0e7490;
+  --card-rose: #b83280;
+  --card-brick: #a83a2b;
   --font-color: #eef0eb;
   --font-color-dark: #151515;
 }
 
 .light-mode {
-  --btn-primary: #2563eb;
   --btn-danger: #dc3545;
   --btn-danger-hover: #c82333;
   --dark: #f0f0f0;
@@ -53,6 +57,35 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Staggered entrance; the global reduced-motion rule above neutralizes it. */
+.reveal-rise {
+  animation: fade-rise 0.4s ease-out both;
+}
+
+@keyframes orbit-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+/* Gentle node drift for the contributors orbit; reduced-motion rule neutralizes it. */
+.orbit-bob {
+  animation: orbit-float 7s ease-in-out infinite;
 }
 
 .schedules-scroll {

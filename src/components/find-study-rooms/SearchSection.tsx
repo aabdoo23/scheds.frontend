@@ -1,8 +1,13 @@
+import { Button } from '@/components/ui/Button';
+import { OptionChip } from '@/components/ui/OptionChip';
+
 interface SearchSectionProps {
   dayOfWeek: string;
   onDayChange: (day: string) => void;
   minimumMinutes: number;
   onMinimumMinutesChange: (value: number) => void;
+  onlyAvailableNow: boolean;
+  onOnlyAvailableNowChange: (value: boolean) => void;
   onSearchNow: () => void;
   onSearchSelectedDay: () => void;
 }
@@ -16,77 +21,96 @@ const DAYS = [
   { value: 'thursday', label: 'Thursday' },
 ];
 
+const DURATIONS = [
+  { value: 30, label: '30 min' },
+  { value: 60, label: '1 hour' },
+  { value: 90, label: '1.5 hours' },
+  { value: 120, label: '2 hours' },
+  { value: 180, label: '3 hours' },
+];
+
 export function SearchSection({
   dayOfWeek,
   onDayChange,
   minimumMinutes,
   onMinimumMinutesChange,
+  onlyAvailableNow,
+  onOnlyAvailableNowChange,
   onSearchNow,
   onSearchSelectedDay,
 }: SearchSectionProps) {
   return (
-    <div className="bg-[var(--lighter-dark)] shadow-[0_4px_20px_rgba(0,0,0,0.1)] p-6 rounded-xl flex-1 min-w-[300px]">
-      <h2 className="text-2xl mb-5 text-[var(--light-text)]">
-        <i className="fas fa-search mr-2" />
-        Search Criteria
-      </h2>
-      <div className="space-y-5">
-        <div>
-          <label
-            htmlFor="day-select"
-            className="block text-base font-semibold text-[var(--light-text)] mb-2"
-          >
-            <i className="fas fa-calendar-day mr-2" />
-            Day of Week
-          </label>
-          <select
-            id="day-select"
-            value={dayOfWeek}
-            onChange={(e) => onDayChange(e.target.value)}
-            className="w-full p-3 text-base border-2 border-[var(--light-text)] rounded-lg bg-[var(--dark)] text-[var(--light-text)] focus:border-[#ff7300] focus:outline-none"
-          >
+    <div className="bg-[var(--lighter-dark)] rounded-xl p-5 border border-white/10">
+      <h2 className="text-[var(--light-text)] text-xl font-semibold m-0 mb-4">Search criteria</h2>
+
+      <div className="flex flex-col gap-5">
+        <fieldset className="border-0 p-0 m-0">
+          <legend className="text-[var(--light-text)] text-sm font-medium p-0 mb-2.5">
+            Day of week
+          </legend>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-2">
             {DAYS.map((d) => (
-              <option key={d.value} value={d.value}>
-                {d.label}
-              </option>
+              <OptionChip
+                key={d.value}
+                type="radio"
+                name="room-day"
+                label={d.label}
+                checked={dayOfWeek === d.value}
+                onChange={() => onDayChange(d.value)}
+              />
             ))}
-          </select>
-        </div>
-        <div>
-          <label
-            htmlFor="minimum-minutes"
-            className="block text-base font-semibold text-[var(--light-text)] mb-2"
-          >
-            <i className="fas fa-clock mr-2" />
-            Minimum Available Duration (minutes)
-          </label>
-          <input
-            type="number"
-            id="minimum-minutes"
-            value={minimumMinutes}
-            onChange={(e) => onMinimumMinutesChange(parseInt(e.target.value, 10) || 0)}
-            min={0}
-            step={30}
-            className="w-full p-3 text-base border-2 border-[var(--light-text)] rounded-lg bg-[var(--dark)] text-[var(--light-text)] focus:border-[#ff7300] focus:outline-none"
+          </div>
+        </fieldset>
+
+        <fieldset className="border-0 p-0 m-0">
+          <legend className="text-[var(--light-text)] text-sm font-medium p-0 mb-2.5">
+            Minimum free block
+          </legend>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(96px,1fr))] gap-2">
+            {DURATIONS.map((d) => (
+              <OptionChip
+                key={d.value}
+                type="radio"
+                name="room-duration"
+                label={d.label}
+                checked={minimumMinutes === d.value}
+                onChange={() => onMinimumMinutesChange(d.value)}
+              />
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="border-0 p-0 m-0">
+          <legend className="text-[var(--light-text)] text-sm font-medium p-0 mb-2.5">Filter</legend>
+          <OptionChip
+            type="checkbox"
+            label="Only rooms free right now"
+            checked={onlyAvailableNow}
+            onChange={onOnlyAvailableNowChange}
           />
-        </div>
-        <div className="flex flex-col gap-2.5">
-          <button
-            type="button"
-            onClick={onSearchNow}
-            className="w-full h-[50px] cursor-pointer text-white text-base font-semibold rounded-[10px] border-none bg-[var(--dark-blue)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_5px_15px_rgba(0,123,255,0.3)] active:scale-[0.98]"
-          >
-            <i className="fas fa-bolt mr-2" />
-            Search Now
-          </button>
-          <button
-            type="button"
-            onClick={onSearchSelectedDay}
-            className="w-full h-[50px] cursor-pointer text-white text-base font-semibold rounded-[10px] border-none bg-[var(--lightest-dark)] transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]"
-          >
-            <i className="fas fa-search mr-2" />
-            Search Selected Day
-          </button>
+        </fieldset>
+
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2.5">
+            <Button onClick={onSearchSelectedDay} fullWidth>
+              <i className="fas fa-magnifying-glass mr-2" aria-hidden />
+              Search
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={onSearchNow}
+              className="shrink-0"
+              title="Jump to the current day and time"
+              aria-label="Search the current day and time now"
+            >
+              <i className="fas fa-bolt mr-2" aria-hidden />
+              Now
+            </Button>
+          </div>
+          <p className="text-xs text-[var(--dark-text)] m-0">
+            <span className="text-[var(--light-text)] font-medium">Now</span> jumps to the current day
+            and time.
+          </p>
         </div>
       </div>
     </div>

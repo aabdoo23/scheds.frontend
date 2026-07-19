@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/Button';
+
 interface MonitoringControlsProps {
   isMonitoring: boolean;
   statusText: string;
@@ -17,36 +19,32 @@ export function MonitoringControls({
 }: MonitoringControlsProps) {
   return (
     <div className="bg-[var(--lighter-dark)] rounded-xl p-6 mb-5 border border-white/10">
-      <h2 className="text-[var(--light-text)] text-xl m-0 mb-5">Controls</h2>
+      <h2 className="text-[var(--light-text)] text-xl font-semibold m-0 mb-5">Controls</h2>
       <div className="flex gap-2.5 mb-4">
         {!isMonitoring ? (
-          <button
-            type="button"
-            onClick={onStart}
-            disabled={!isAuthenticated || cartEmpty}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-white bg-[var(--light-blue)] border-none cursor-pointer transition-colors hover:bg-[var(--dark-blue)] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <i className="fas fa-play" />
-            Start Monitoring
-          </button>
+          <Button onClick={onStart} disabled={!isAuthenticated || cartEmpty} fullWidth>
+            <i className="fas fa-play mr-2" aria-hidden />
+            Start monitoring
+          </Button>
         ) : (
-          <button
-            type="button"
-            onClick={onStop}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-white bg-[#dc3545] border-none cursor-pointer transition-colors hover:bg-[#c82333]"
-          >
-            <i className="fas fa-stop" />
-            Stop Monitoring
-          </button>
+          <Button variant="danger" onClick={onStop} fullWidth>
+            <i className="fas fa-stop mr-2" aria-hidden />
+            Stop monitoring
+          </Button>
         )}
       </div>
       <div
-        className={`py-2.5 px-4 rounded-md text-center text-[0.95rem] ${
-          isMonitoring
-            ? 'bg-white/5 text-[#28a745] font-semibold'
-            : 'bg-white/5 text-[#6c757d]'
+        role="status"
+        className={`py-2.5 px-4 rounded-lg text-center text-sm bg-white/5 ${
+          isMonitoring ? 'text-[var(--success)] font-semibold' : 'text-[var(--dark-text)]'
         }`}
       >
+        {isMonitoring && (
+          <span
+            className="inline-block w-2 h-2 rounded-full bg-[var(--success)] mr-2 align-middle animate-pulse motion-reduce:animate-none"
+            aria-hidden
+          />
+        )}
         {statusText}
       </div>
     </div>

@@ -1,5 +1,14 @@
-import { useState, useCallback, useEffect } from 'react';
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type RefObject,
+  type ReactNode,
+} from 'react';
 import { fetchWithCredentials } from '@/lib/api';
+import { courseColor } from '@/lib/scheduleView';
 import { useGenerateCart } from '@/hooks/useGenerateCart';
 import { useGenerateRequest } from '@/hooks/useGenerateRequest';
 import { useCourseSearchDebounced } from '@/hooks/useCourseSearchDebounced';
@@ -7,25 +16,81 @@ import type { GenerateRequest, ScheduleCardItem, CustomCartItem } from '@/types/
 import { SearchSection } from '@/components/generate-schedules/SearchSection';
 import { CartList } from '@/components/generate-schedules/CartList';
 import { Button } from '@/components/ui/Button';
-import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { CustomizationForm } from '@/components/generate-schedules/CustomizationForm';
 import { SchedulesList } from '@/components/generate-schedules/SchedulesList';
 
+type GenerateStatus = 'idle' | 'loading' | 'success' | 'error';
+
+const RESULTS_KEY = 'scheds:generate-results';
+const SIGNATURE_KEY = 'scheds:generate-signature';
+
+function loadStoredSchedules(): ScheduleCardItem[][] {
+  try {
+    const raw = sessionStorage.getItem(RESULTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function loadStoredSignature(): string | null {
+  try {
+    return sessionStorage.getItem(SIGNATURE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function generateErrorMessage(status: number): string {
+  if (status === 429) return 'Too many requests right now. Wait a moment, then try again.';
+  if (status === 401 || status === 403)
+    return 'Your session expired. Refresh the page (and sign in again if prompted), then try again.';
+  if (status >= 500) return 'The server hit a problem building your schedules. Try again in a moment.';
+  return 'Something went wrong building your schedules. Try again.';
+}
+
 export function GenerateSchedulesPage() {
   const [query, setQuery] = useState('');
-  const [schedules, setSchedules] = useState<ScheduleCardItem[][]>([]);
-  const [generateLoading, setGenerateLoading] = useState(false);
+  const [schedules, setSchedules] = useState<ScheduleCardItem[][]>(loadStoredSchedules);
+  const [genStatus, setGenStatus] = useState<GenerateStatus>(
+    schedules.length > 0 ? 'success' : 'idle'
+  );
+  const [generatedSignature, setGeneratedSignature] = useState<string | null>(loadStoredSignature);
+  const [genError, setGenError] = useState<string | null>(null);
+  const generateLoading = genStatus === 'loading';
   const [searchLiveLoading, setSearchLiveLoading] = useState(false);
+  const [searchLiveError, setSearchLiveError] = useState(false);
   const [cartLimitError, setCartLimitError] = useState(false);
   const [clearCartOpen, setClearCartOpen] = useState(false);
   const [addedFeedback, setAddedFeedback] = useState<string | null>(null);
+  const [spineVisible, setSpineVisible] = useState(false);
+
+  const coursesRef = useRef<HTMLElement | null>(null);
+  const prefsRef = useRef<HTMLElement | null>(null);
+  const resultsRef = useRef<HTMLElement | null>(null);
+  const resultsHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const justGenerated = useRef(false);
 
   useEffect(() => {
     if (!addedFeedback) return;
     const t = setTimeout(() => setAddedFeedback(null), 2000);
     return () => clearTimeout(t);
   }, [addedFeedback]);
+
+  // Reveal the sticky spine once the courses stage has scrolled above the navbar,
+  // so the cart + primary action stay reachable while tuning and reviewing.
+  useEffect(() => {
+    const el = coursesRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setSpineVisible(!entry.isIntersecting),
+      { rootMargin: '-80px 0px 0px 0px', threshold: 0 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   const {
     cart,
@@ -36,7 +101,7 @@ export function GenerateSchedulesPage() {
     hasCustomSelection,
   } = useGenerateCart();
 
-  const { request, updateRequest } = useGenerateRequest();
+  const { request, updateRequest, resetRequest } = useGenerateRequest();
   const { results, loading: searchLoading } = useCourseSearchDebounced(query);
 
   const handleAddToCart = useCallback(
@@ -62,12 +127,14 @@ export function GenerateSchedulesPage() {
     const trimmed = query.trim();
     if (!trimmed) return;
     setSearchLiveLoading(true);
+    setSearchLiveError(false);
     try {
-      await fetchWithCredentials(
+      const res = await fetchWithCredentials(
         `/api/coursebase/search/${encodeURIComponent(trimmed)}`
       );
+      if (!res.ok) setSearchLiveError(true);
     } catch {
-      // ignore
+      setSearchLiveError(true);
     } finally {
       setSearchLiveLoading(false);
     }
@@ -115,10 +182,40 @@ export function GenerateSchedulesPage() {
     };
   }, [cart, request, hasCustomSelection]);
 
+  // Signature of the exact inputs a generation depends on. When the live inputs
+  // drift from what produced the current results, those results are stale.
+  const currentSignature = useMemo(
+    () => JSON.stringify(buildGenerateRequest()),
+    [buildGenerateRequest]
+  );
+  const resultsStale =
+    genStatus === 'success' &&
+    generatedSignature !== null &&
+    currentSignature !== generatedSignature;
+
+  const canGenerate = cart.length > 0 && request.daysStart < request.daysEnd;
+
+  const scrollTo = useCallback((el: HTMLElement | null) => {
+    if (!el) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  }, []);
+
+  // After a fresh generate, hand the viewport + focus to the results — this is the
+  // payoff moment and it lives well below the fold.
+  useEffect(() => {
+    if (genStatus !== 'success' || !justGenerated.current) return;
+    justGenerated.current = false;
+    scrollTo(resultsRef.current);
+    resultsHeadingRef.current?.focus({ preventScroll: true });
+  }, [genStatus, schedules, scrollTo]);
+
   const handleGenerate = useCallback(async () => {
     const genRequest = buildGenerateRequest();
+    const signature = JSON.stringify(genRequest);
 
-    setGenerateLoading(true);
+    setGenStatus('loading');
+    setGenError(null);
     try {
       const res = await fetchWithCredentials('/api/generate', {
         method: 'POST',
@@ -127,104 +224,224 @@ export function GenerateSchedulesPage() {
       });
 
       if (!res.ok) {
-        setSchedules([]);
+        setGenError(generateErrorMessage(res.status));
+        setGenStatus('error');
         return;
       }
 
       const json = await res.json();
       const data = Array.isArray(json) ? json : [];
+      justGenerated.current = true;
       setSchedules(data);
+      setGenStatus('success');
+      setGeneratedSignature(signature);
+      try {
+        sessionStorage.setItem(RESULTS_KEY, JSON.stringify(data));
+        sessionStorage.setItem(SIGNATURE_KEY, signature);
+      } catch {
+        // storage full or unavailable — results still live in state this session
+      }
     } catch {
-      setSchedules([]);
-    } finally {
-      setGenerateLoading(false);
+      setGenError("Couldn't reach the server. Check your connection, then try again.");
+      setGenStatus('error');
     }
   }, [buildGenerateRequest]);
 
   return (
-    <main className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <main className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <h1 className="text-[var(--light-text)] text-2xl sm:text-3xl font-bold m-0 mb-5 tracking-tight">
+        Generate schedules
+      </h1>
+
+      {/* Sticky spine — keeps the cart and primary action in reach while scrolling */}
+      <PipelineSpine
+        visible={spineVisible}
+        cart={cart}
+        canGenerate={canGenerate}
+        loading={generateLoading}
+        onGenerate={handleGenerate}
+        onJumpToCourses={() => scrollTo(coursesRef.current)}
+      />
+
       {addedFeedback && (
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-[var(--light-blue)] text-white font-medium flex items-center gap-2 shadow-lg"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-[var(--light-blue)] text-white font-medium flex items-center gap-2 shadow-lg"
         >
           <i className="fas fa-check" aria-hidden />
           {addedFeedback} added to cart
         </div>
       )}
 
-      {/* Search and Cart */}
-      <section className="flex flex-col lg:flex-row gap-5 mb-8" aria-label="Search and cart">
-        <SearchSection
-          query={query}
-          onQueryChange={setQuery}
-          results={results}
-          loading={searchLoading}
-          liveSearchLoading={liveSearchLoading || searchLiveLoading}
-          useLiveData={request.useLiveData}
-          onUseLiveDataChange={(v) => updateRequest({ useLiveData: v })}
-          onAddToCart={handleAddToCart}
-          onSearchLive={handleSearchLive}
-          cartLimitError={cartLimitError}
-          onCartLimitErrorDismiss={() => setCartLimitError(false)}
+      {/* Set-up deck — selections + preferences on top */}
+      <div className="xl:grid xl:grid-cols-[2fr_3fr] xl:gap-6 xl:items-start mb-8">
+      {/* Stage 1 — Choose courses */}
+      <section
+        ref={coursesRef}
+        aria-labelledby="stage-courses"
+        className="mb-8 xl:mb-0 scroll-mt-[calc(var(--navbar-height)+5rem)]"
+      >
+        <StageHeading
+          id="stage-courses"
+          title="Choose courses"
+          hint="Search NU's catalog and add up to 8 courses."
         />
-        <CartList
-          cart={cart}
-          onRemove={removeFromCart}
-          onClear={handleClearCartClick}
-          onUpdate={handleUpdateCartItem}
-          hasCustomSelection={hasCustomSelection}
-        />
+        <div className="flex flex-col gap-5">
+          <SearchSection
+            query={query}
+            onQueryChange={setQuery}
+            results={results}
+            loading={searchLoading}
+            liveSearchLoading={liveSearchLoading || searchLiveLoading}
+            useLiveData={request.useLiveData}
+            onUseLiveDataChange={(v) => updateRequest({ useLiveData: v })}
+            onAddToCart={handleAddToCart}
+            onSearchLive={handleSearchLive}
+            cartCourseCodes={cart.map((c) => c.courseCode)}
+            cartLimitError={cartLimitError}
+            onCartLimitErrorDismiss={() => setCartLimitError(false)}
+            searchLiveError={searchLiveError}
+          />
+          <CartList
+            cart={cart}
+            onRemove={removeFromCart}
+            onClear={handleClearCartClick}
+            onUpdate={handleUpdateCartItem}
+            hasCustomSelection={hasCustomSelection}
+          />
+        </div>
       </section>
 
-      {/* Customization */}
-      <CustomizationForm request={request} onUpdate={updateRequest} />
-
-      {/* Generate button */}
-      <div className="sticky bottom-0 z-10 pt-4 pb-4 lg:pt-0 lg:pb-0 lg:static lg:z-auto bg-[var(--dark)] lg:bg-transparent -mx-4 px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0">
-        <Button
-        onClick={handleGenerate}
-        disabled={generateLoading || cart.length === 0}
-        aria-busy={generateLoading}
-        fullWidth
-        className="py-4 text-xl"
+      {/* Stage 2 — Set preferences */}
+      <section
+        ref={prefsRef}
+        aria-labelledby="stage-prefs"
+        className="scroll-mt-[calc(var(--navbar-height)+5rem)]"
       >
-        Generate Schedules
-      </Button>
+        <StageHeading
+          id="stage-prefs"
+          title="Set preferences"
+          hint="Defaults work for most students — adjust only what you care about."
+          action={
+            <Button variant="ghost" onClick={resetRequest} className="px-3 text-sm">
+              <i className="fas fa-rotate-left mr-2" aria-hidden />
+              Reset
+            </Button>
+          }
+        />
+        <CustomizationForm request={request} onUpdate={updateRequest} />
+      </section>
       </div>
-      {generateLoading && (
-        <h3 className="text-center text-[var(--light-text)] mt-4" aria-live="polite">
-          Working the magic, please wait...
-          <br />
-          Don&apos;t panic it&apos;s not stuck, it&apos;s just amazed by your choices.
-        </h3>
-      )}
 
-      {/* Generated Schedules */}
-      <section className="mt-10" role="region" aria-label="Generated schedules" aria-live="polite">
-        <div className="flex flex-row items-center gap-2 mb-4">
-          <h2 className="text-[var(--light-text)] text-xl font-bold m-0">Generated Schedules</h2>
-          <Tooltip
-            content="If you can't see a course selected above, then it probably has no schedule. If not sure, search for the course using the Search live button and try again. If all fails, report it in the form in the main page, bottom right."
-            label="Generated schedules info"
-          >
-            <i className="fas fa-info-circle text-[var(--dark-text)]" aria-hidden />
-          </Tooltip>
-        </div>
+      {/* Generate action — the seam between set-up and schedules */}
+      <div className="mb-10">
+        {cart.length === 0 ? (
+          <div className="flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-[var(--lighter-dark)]/40 px-4 py-5 text-center">
+            <i className="fas fa-arrow-up text-[var(--dark-text)]" aria-hidden />
+            <p className="text-[var(--dark-text)] text-sm m-0">
+              Add at least one course to generate schedules.
+            </p>
+          </div>
+        ) : (
+          <>
+            <Button
+              onClick={handleGenerate}
+              disabled={generateLoading || !canGenerate}
+              aria-busy={generateLoading}
+              fullWidth
+              className="py-4 text-xl"
+            >
+              {generateLoading ? (
+                <>
+                  <i className="fas fa-circle-notch fa-spin mr-2" aria-hidden />
+                  Generating&hellip;
+                </>
+              ) : (
+                'Generate Schedules'
+              )}
+            </Button>
+            {request.daysStart >= request.daysEnd && (
+              <p role="alert" className="text-[var(--btn-danger)] text-sm mt-2 mb-0 flex items-center gap-2">
+                <i className="fas fa-triangle-exclamation" aria-hidden />
+                Fix the class-hours range above before generating.
+              </p>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Stage 3 — Schedules (full width) */}
+      <section
+        ref={resultsRef}
+        role="region"
+        aria-labelledby="stage-results"
+        aria-live="polite"
+        className="scroll-mt-[calc(var(--navbar-height)+1rem)]"
+      >
+        <StageHeading
+          id="stage-results"
+          headingRef={resultsHeadingRef}
+          title="Review schedules"
+        />
         <div className="min-h-[200px]">
-          {schedules.length === 0 && !generateLoading ? (
+          {genStatus === 'loading' ? (
+            <div className="flex flex-col items-center justify-center py-12 px-4 rounded-xl bg-[var(--lighter-dark)] border border-white/10 text-center">
+              <i className="fas fa-circle-notch fa-spin text-4xl text-[var(--light-blue)] mb-4" aria-hidden />
+              <h3 className="text-[var(--light-text)] text-xl font-semibold m-0 mb-2">
+                Building your schedules&hellip;
+              </h3>
+              <p className="text-[var(--dark-text)] m-0 max-w-md">
+                Crunching every combination that fits your courses and preferences.
+              </p>
+            </div>
+          ) : genStatus === 'error' ? (
+            <div
+              role="alert"
+              className="flex flex-col items-center justify-center py-12 px-4 rounded-xl bg-[var(--lighter-dark)] border border-[var(--btn-danger)]/40 text-center"
+            >
+              <i className="fas fa-triangle-exclamation text-4xl text-[var(--btn-danger)] mb-4" aria-hidden />
+              <h3 className="text-[var(--light-text)] text-xl font-semibold m-0 mb-2">
+                Couldn&apos;t generate schedules
+              </h3>
+              <p className="text-[var(--light-text)]/80 m-0 mb-5 max-w-md">
+                {genError}
+              </p>
+              <Button onClick={handleGenerate} className="min-w-[10rem]">
+                <i className="fas fa-rotate-right mr-2" aria-hidden />
+                Try again
+              </Button>
+            </div>
+          ) : genStatus === 'success' ? (
+            <>
+              {resultsStale && (
+                <div
+                  role="status"
+                  className="mb-4 p-3 rounded-lg bg-[var(--card-yellow)]/15 border border-[var(--card-yellow)]/50 text-[var(--light-text)] text-sm flex flex-wrap items-center justify-between gap-3"
+                >
+                  <span className="flex items-center gap-2">
+                    <i className="fas fa-triangle-exclamation text-[var(--card-yellow)]" aria-hidden />
+                    Your courses or preferences changed since these were generated.
+                  </span>
+                  <Button onClick={handleGenerate} className="shrink-0">
+                    <i className="fas fa-rotate-right mr-2" aria-hidden />
+                    Regenerate
+                  </Button>
+                </div>
+              )}
+              <SchedulesList schedules={schedules} />
+              <MissingCourseHelp />
+            </>
+          ) : (
             <div className="flex flex-col items-center justify-center py-12 px-4 rounded-xl bg-[var(--lighter-dark)] border border-white/10 text-center">
               <i className="fas fa-calendar-plus text-4xl text-[var(--dark-text)] mb-4" aria-hidden />
               <h3 className="text-[var(--light-text)] text-xl font-semibold m-0 mb-2">
                 No schedules yet
               </h3>
               <p className="text-[var(--dark-text)] m-0 max-w-md">
-                Add courses above, then click &quot;Generate Schedules&quot; to see your options here.
+                Your generated timetables will appear here.
               </p>
             </div>
-          ) : (
-            <SchedulesList schedules={schedules} />
           )}
         </div>
       </section>
@@ -239,5 +456,136 @@ export function GenerateSchedulesPage() {
         onCancel={() => setClearCartOpen(false)}
       />
     </main>
+  );
+}
+
+function StageHeading({
+  id,
+  title,
+  hint,
+  action,
+  headingRef,
+}: {
+  id: string;
+  title: string;
+  hint?: string;
+  action?: ReactNode;
+  headingRef?: RefObject<HTMLHeadingElement | null>;
+}) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+      <div className="min-w-0">
+        <h2
+          id={id}
+          ref={headingRef}
+          tabIndex={headingRef ? -1 : undefined}
+          className="text-[var(--light-text)] text-xl font-semibold m-0 leading-tight outline-none"
+        >
+          {title}
+        </h2>
+        {hint && <p className="text-[var(--dark-text)] text-sm m-0 mt-0.5">{hint}</p>}
+      </div>
+      {action && <div className="shrink-0 flex items-center gap-2 pt-1">{action}</div>}
+    </div>
+  );
+}
+
+function MissingCourseHelp() {
+  return (
+    <details className="group mt-4 rounded-xl bg-[var(--lighter-dark)] border border-white/10">
+      <summary className="flex items-center gap-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden px-4 py-3 text-sm font-medium text-[var(--light-text)] rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--light-blue)]">
+        <i className="fas fa-circle-question text-[var(--dark-text)]" aria-hidden />
+        Missing a course?
+        <i
+          className="fas fa-chevron-down text-[var(--dark-text)] ml-auto transition-transform group-open:rotate-180"
+          aria-hidden
+        />
+      </summary>
+      <ol className="m-0 px-4 pb-4 pl-9 flex flex-col gap-1.5 list-decimal text-sm text-[var(--dark-text)]">
+        <li>
+          It may have no section that fits — loosen your preferences (days, hours, gaps) and generate
+          again.
+        </li>
+        <li>
+          Not cached yet? Use <span className="text-[var(--light-text)] font-medium">Search NU live</span>{' '}
+          in the search box above, then generate again.
+        </li>
+        <li>Still missing? Report it via the form on the main page (bottom-right).</li>
+      </ol>
+    </details>
+  );
+}
+
+function PipelineSpine({
+  visible,
+  cart,
+  canGenerate,
+  loading,
+  onGenerate,
+  onJumpToCourses,
+}: {
+  visible: boolean;
+  cart: CustomCartItem[];
+  canGenerate: boolean;
+  loading: boolean;
+  onGenerate: () => void;
+  onJumpToCourses: () => void;
+}) {
+  return (
+    <div
+      aria-hidden={!visible}
+      className={`sticky top-[var(--navbar-height)] z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 ${
+        visible ? '' : 'h-0 overflow-hidden'
+      }`}
+    >
+      <div
+        className={`my-2 flex items-center gap-3 rounded-xl border border-white/10 bg-[var(--lighter-dark)] px-3 py-2 shadow-lg sm:px-4 transition-all duration-200 motion-reduce:transition-none ${
+          visible ? 'visible opacity-100 translate-y-0' : 'invisible opacity-0 -translate-y-2'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={onJumpToCourses}
+          className="flex items-center gap-2 min-w-0 rounded-lg py-1.5 px-2 transition-colors hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--light-blue)]"
+        >
+          <i className="fas fa-cart-shopping text-[var(--dark-text)]" aria-hidden />
+          <span className="text-sm font-semibold text-[var(--light-text)] tabular-nums">
+            {cart.length}
+            <span className="text-[var(--dark-text)] font-normal">/8</span>
+          </span>
+          {cart.length > 0 && (
+            <span className="hidden sm:flex items-center gap-1 ml-1" aria-hidden>
+              {cart.slice(0, 8).map((c) => (
+                <span
+                  key={c.courseCode}
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: courseColor(c.courseCode).bg }}
+                />
+              ))}
+            </span>
+          )}
+          <span className="sr-only">courses in cart — jump to courses</span>
+        </button>
+        <div className="flex-1" />
+        <Button
+          onClick={onGenerate}
+          disabled={loading || !canGenerate}
+          aria-busy={loading}
+          className="shrink-0 px-4 py-2 text-sm"
+        >
+          {loading ? (
+            <>
+              <i className="fas fa-circle-notch fa-spin mr-2" aria-hidden />
+              Generating&hellip;
+            </>
+          ) : (
+            <>
+              <i className="fas fa-bolt mr-2" aria-hidden />
+              Generate
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
   );
 }

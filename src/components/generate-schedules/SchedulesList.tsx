@@ -1,28 +1,33 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import type { ScheduleCardItem } from '@/types/generate';
-import { ScheduleTable } from './ScheduleTable';
+import { Button } from '@/components/ui/Button';
+import { ScheduleCanvas } from './ScheduleCanvas';
+import { ScheduleRankList } from './ScheduleRankList';
+import { buildICS, sectionsText } from '@/lib/scheduleExport';
+import {
+  normalizeSchedule,
+  scheduleMetrics,
+  rankOrder,
+  formatClock,
+  formatDays,
+  formatGap,
+  type SortKey,
+} from '@/lib/scheduleView';
 
 interface SchedulesListProps {
   schedules: ScheduleCardItem[][];
 }
 
 export function SchedulesList({ schedules }: SchedulesListProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [activeCardKey, setActiveCardKey] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>('fewestDays');
+  const [selected, setSelected] = useState<number | null>(null);
 
-  const handleCardActivate = useCallback((key: string, _byClick?: boolean) => {
-    setActiveCardKey(key);
-  }, []);
-
-  const handleCardDeactivate = useCallback(() => {
-    setActiveCardKey(null);
-  }, []);
-
-  useEffect(() => {
-    if (schedules.length > 0 && selectedIndex >= schedules.length) {
-      setSelectedIndex(schedules.length - 1);
-    }
-  }, [schedules.length, selectedIndex]);
+  const normalized = useMemo(
+    () => schedules.map((s) => normalizeSchedule(s)),
+    [schedules]
+  );
+  const metrics = useMemo(() => normalized.map(scheduleMetrics), [normalized]);
+  const order = useMemo(() => rankOrder(metrics, sortKey), [metrics, sortKey]);
 
   if (schedules.length === 0) {
     return (
@@ -38,56 +43,96 @@ export function SchedulesList({ schedules }: SchedulesListProps) {
     );
   }
 
-  const safeIndex = Math.min(selectedIndex, schedules.length - 1);
-  const currentSchedule = schedules[safeIndex];
-  const canPrev = safeIndex > 0;
-  const canNext = safeIndex < schedules.length - 1;
+  const active =
+    selected !== null && order.includes(selected) ? selected : order[0];
+  const activeRank = order.indexOf(active) + 1;
+  const m = metrics[active];
+
+  const activeLabel = schedules.length > 1 ? `Schedule #${activeRank}` : 'Your schedule';
+
+  const canvasHeader = (
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 mb-4">
+      <div className="min-w-0">
+        <h3 className="text-[var(--light-text)] text-lg font-semibold m-0">{activeLabel}</h3>
+        <p className="text-[var(--dark-text)] text-sm m-0 mt-0.5">
+          <span className="text-[var(--light-text)] font-medium">{formatDays(m.daysOnCampus)}</span>
+          {' · '}
+          {formatGap(m.gapMinutes)}
+          {' · '}
+          <span className="tabular-nums">
+            {formatClock(m.earliestStart)}–{formatClock(m.latestEnd)}
+          </span>
+        </p>
+      </div>
+      <ScheduleActions items={normalized[active]} label={activeLabel} />
+    </div>
+  );
+
+  if (schedules.length === 1) {
+    return (
+      <div>
+        {canvasHeader}
+        <ScheduleCanvas items={normalized[active]} />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col items-center w-full min-h-[200px]">
-      <div className="flex items-center justify-center gap-4 mb-4 w-full">
-        <span className="font-semibold text-lg text-[var(--light-text)]">
-          {schedules.length} Generated Schedules
-        </span>
-        <nav
-          className="flex items-center gap-2"
-          aria-label="Navigate between schedules"
-        >
-          <button
-            type="button"
-            onClick={() => setSelectedIndex((i) => Math.max(0, i - 1))}
-            disabled={!canPrev}
-            className="px-3 py-1.5 rounded-lg bg-[var(--lighter-dark)] text-[var(--light-text)] font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:bg-[var(--light-blue)] transition-colors"
-            aria-label="Previous schedule"
-          >
-            Prev
-          </button>
-          <span className="text-[var(--light-text)] font-medium min-w-[7rem] text-center">
-            Schedule {safeIndex + 1} of {schedules.length}
-          </span>
-          <button
-            type="button"
-            onClick={() => setSelectedIndex((i) => Math.min(schedules.length - 1, i + 1))}
-            disabled={!canNext}
-            className="px-3 py-1.5 rounded-lg bg-[var(--lighter-dark)] text-[var(--light-text)] font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:bg-[var(--light-blue)] transition-colors"
-            aria-label="Next schedule"
-          >
-            Next
-          </button>
-        </nav>
+    <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)] xl:items-start">
+      <ScheduleRankList
+        schedules={normalized}
+        metrics={metrics}
+        order={order}
+        selected={active}
+        onSelect={setSelected}
+        sortKey={sortKey}
+        onSortChange={setSortKey}
+      />
+      <div className="rounded-xl bg-[var(--lighter-dark)] border border-white/10 p-4 sm:p-5 min-w-0">
+        {canvasHeader}
+        <ScheduleCanvas items={normalized[active]} />
       </div>
-      <div className="schedules-scroll flex flex-col w-full overflow-x-auto scroll-smooth">
-        <div className="overflow-x-auto overflow-y-visible">
-          <ScheduleTable
-            key={safeIndex}
-            items={currentSchedule}
-            scheduleIndex={safeIndex}
-            activeCardKey={activeCardKey}
-            onCardActivate={handleCardActivate}
-            onCardDeactivate={handleCardDeactivate}
-          />
-        </div>
-      </div>
+    </div>
+  );
+}
+
+function ScheduleActions({ items, label }: { items: ScheduleCardItem[]; label: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const exportICS = () => {
+    const blob = new Blob([buildICS(items, `Scheds — ${label}`)], {
+      type: 'text/calendar;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${label.replace(/[^\w]+/g, '-').toLowerCase()}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const copySections = async () => {
+    try {
+      await navigator.clipboard.writeText(sectionsText(items));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard unavailable — silently no-op
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button variant="secondary" onClick={copySections} className="px-3 py-2 text-sm">
+        <i className={`fas ${copied ? 'fa-check' : 'fa-copy'} mr-2`} aria-hidden />
+        {copied ? 'Copied' : 'Copy sections'}
+      </Button>
+      <Button variant="secondary" onClick={exportICS} className="px-3 py-2 text-sm">
+        <i className="fas fa-download mr-2" aria-hidden />
+        Export .ics
+      </Button>
     </div>
   );
 }

@@ -128,18 +128,13 @@ export function SeatModerationPage() {
         onConfirm={handleUnsubscribeConfirm}
         onCancel={() => setUnsubscribeTarget(null)}
       />
-      <div className="p-5">
-        <div className="text-center my-6 text-[var(--light-text)]">
-          <h1 className="text-4xl m-0 mb-2.5 flex items-center justify-center gap-4">
-            <i className="fas fa-bell text-[var(--light-blue)]" />
-            Seat Monitoring
-          </h1>
-          <p className="text-[var(--dark-text)] text-lg m-0">
-            Monitor course seat availability and get notified when seats become available
-          </p>
-        </div>
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 text-[var(--light-text)]">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight m-0 mb-1">Seat monitoring</h1>
+        <p className="text-[var(--dark-text)] m-0 mb-8">
+          Track course seats and get notified the moment one opens up.
+        </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 xl:items-start">
           <div>
             <CourseSearch
               query={searchQuery}
@@ -184,7 +179,7 @@ export function SeatModerationPage() {
             />
           </div>
         </div>
-      </div>
+      </main>
     </>
   );
 }

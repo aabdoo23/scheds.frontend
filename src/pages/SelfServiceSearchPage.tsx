@@ -38,7 +38,12 @@ export function SelfServiceSearchPage() {
   };
 
   return (
-    <>
+    <main className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 text-[var(--light-text)]">
+      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight m-0 mb-1">Search for courses</h1>
+      <p className="text-[var(--dark-text)] m-0 mb-6">
+        Look up any section straight from NU Self-Service — by code, name, or instructor.
+      </p>
+
       <SearchSection
         query={query}
         onQueryChange={setQuery}
@@ -47,30 +52,43 @@ export function SelfServiceSearchPage() {
       />
 
       {error && (
-        <div className="w-4/5 mx-auto mt-5 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200">
-          {error}
+        <div
+          role="alert"
+          className="mt-6 flex flex-col items-center justify-center py-12 px-4 rounded-xl bg-[var(--lighter-dark)] border border-[var(--btn-danger)]/40 text-center"
+        >
+          <i className="fas fa-triangle-exclamation text-4xl text-[var(--btn-danger)] mb-4" aria-hidden />
+          <h2 className="text-[var(--light-text)] text-xl font-semibold m-0 mb-2">
+            Couldn&apos;t search courses
+          </h2>
+          <p className="text-[var(--light-text)]/80 m-0 max-w-md">{error}</p>
         </div>
       )}
 
-      {data.length > 0 && (
-        <div className="mt-6 mx-auto bg-[var(--lighter-dark)] rounded-[10px] shadow-[0_2px_4px_rgba(0,0,0,0.1)] p-5 text-[var(--light-text)] w-4/5">
+      {!error && data.length > 0 && (
+        <section className="mt-6" aria-label="Search results" aria-live="polite">
           <FilterSection
             filters={filters}
             onFiltersChange={setFilters}
             results={data}
             filteredCount={filteredResults.length}
           />
-          <div className="grid gap-8 mt-0 grid-cols-[repeat(auto-fit,minmax(320px,1fr))]">
+          <div className="grid gap-5 grid-cols-[repeat(auto-fill,minmax(320px,1fr))]">
             {filteredResults.map((course, idx) => (
-              <CourseCard
-                key={`${course.cardId}-${course.section}-${idx}`}
-                course={course}
-                index={idx}
-              />
+              <CourseCard key={`${course.cardId}-${course.section}-${idx}`} course={course} />
             ))}
           </div>
+        </section>
+      )}
+
+      {!loading && !error && data.length === 0 && (
+        <div className="mt-6 flex flex-col items-center justify-center py-12 px-4 rounded-xl bg-[var(--lighter-dark)] border border-white/10 text-center">
+          <i className="fas fa-magnifying-glass text-4xl text-[var(--dark-text)] mb-4" aria-hidden />
+          <h2 className="text-[var(--light-text)] text-xl font-semibold m-0 mb-2">No results yet</h2>
+          <p className="text-[var(--dark-text)] m-0 max-w-md">
+            Search a course code, name, or instructor to see matching sections here.
+          </p>
         </div>
       )}
-    </>
+    </main>
   );
 }

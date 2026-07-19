@@ -1,80 +1,59 @@
 import type { CourseSearchResult } from '@/types/course';
 import { formatTime } from '@/lib/roomUtils';
-
-const CARD_COLORS = [
-  'var(--card-blue)',
-  'var(--card-green)',
-  'var(--card-yellow)',
-  'var(--card-purple)',
-  'var(--card-brown)',
-];
-
-const FONT_COLORS = [
-  'var(--font-color)',
-  'var(--font-color)',
-  'var(--font-color-dark)',
-  'var(--font-color)',
-  'var(--font-color-dark)',
-];
+import { courseColor } from '@/lib/scheduleView';
 
 interface CourseCardProps {
   course: CourseSearchResult;
-  index: number;
 }
 
-export function CourseCard({ course, index }: CourseCardProps) {
-  const cardColor = CARD_COLORS[index % CARD_COLORS.length];
-  const fontColor = FONT_COLORS[index % FONT_COLORS.length];
+function MetaChip({ icon, children }: { icon: string; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs text-[var(--light-text)] bg-white/[0.04] border border-white/10 rounded-full px-2.5 py-1">
+      <i className={`fas ${icon} text-[var(--dark-text)]`} aria-hidden />
+      {children}
+    </span>
+  );
+}
+
+export function CourseCard({ course }: CourseCardProps) {
+  const color = courseColor(course.courseCode);
   const startTime = formatTime(course.startTime);
   const endTime = formatTime(course.endTime);
 
   return (
-    <div
-      className="rounded-[18px] shadow-[0_4px_8px_rgba(60,60,60,0.08)] p-0 flex flex-col justify-between min-h-[240px] transition-all duration-150 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_8px_32px_rgba(60,60,60,0.16)]"
-      style={{ background: cardColor }}
-    >
-      <div className="px-7 pt-7 pb-3">
-        <div
-          className="text-[1.35rem] font-bold mb-2"
-          style={{ color: fontColor }}
-        >
-          {course.courseCode}: {course.courseName}
+    <div className="bg-[var(--lighter-dark)] rounded-xl border border-white/10 p-5 flex flex-col gap-3 shadow-[0_3px_10px_rgba(0,0,0,0.2)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_5px_20px_rgba(0,0,0,0.3)] motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+      <div className="flex items-start gap-2.5 min-w-0">
+        <span
+          className="mt-1.5 w-2.5 h-2.5 rounded-full shrink-0"
+          style={{ backgroundColor: color.bg }}
+          aria-hidden
+        />
+        <div className="min-w-0">
+          <h3 className="text-[var(--light-text)] text-lg font-semibold leading-tight m-0">
+            <span className="tabular-nums">{course.courseCode}</span>: {course.courseName}
+          </h3>
+          <p className="text-[var(--dark-text)] text-sm m-0 mt-1">
+            <i className="fas fa-user-tie mr-2" aria-hidden />
+            {course.instructorName}
+          </p>
         </div>
-        <div
-          className="text-base mb-4"
-          style={{ color: fontColor }}
-        >
-          <i className="fas fa-user-tie mr-2" />
-          Instructor <b>{course.instructorName}</b>
-        </div>
-        <div className="flex flex-wrap gap-2.5 mb-2">
-          <span className="bg-white/70 rounded-xl px-3.5 py-1 text-[0.95rem] font-medium text-[#151515] shadow-[0_1px_2px_rgba(185,211,221,0.097)]">
-            <i className="fas fa-hashtag mr-1" />
-            Section <b>{course.section}</b>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <MetaChip icon="fa-hashtag">
+          Section <b className="font-semibold">{course.section}</b>
+        </MetaChip>
+        <MetaChip icon="fa-tag">{course.subType}</MetaChip>
+        <MetaChip icon="fa-graduation-cap">
+          {course.credits} cr
+        </MetaChip>
+        <MetaChip icon="fa-calendar">{course.day || 'No day'}</MetaChip>
+        <MetaChip icon="fa-clock">
+          <span className="tabular-nums">
+            {startTime} – {endTime}
           </span>
-          <span className="bg-white/70 rounded-xl px-3.5 py-1 text-[0.95rem] font-medium text-[#151515] shadow-[0_1px_2px_rgba(185,211,221,0.097)]">
-            <i className="fas fa-tag mr-1" />
-            <b>{course.subType}</b>
-          </span>
-          <span className="bg-white/70 rounded-xl px-3.5 py-1 text-[0.95rem] font-medium text-[#151515] shadow-[0_1px_2px_rgba(185,211,221,0.097)]">
-            <i className="fas fa-graduation-cap mr-1" />
-            Credits <b>{course.credits}</b>
-          </span>
-          <span className="bg-white/70 rounded-xl px-3.5 py-1 text-[0.95rem] font-medium text-[#151515] shadow-[0_1px_2px_rgba(185,211,221,0.097)]">
-            <i className="fas fa-calendar mr-1" />
-            <b>{course.day || 'No Day'}</b>
-          </span>
-          <span className="bg-white/70 rounded-xl px-3.5 py-1 text-[0.95rem] font-medium text-[#151515] shadow-[0_1px_2px_rgba(185,211,221,0.097)]">
-            <i className="fas fa-clock mr-1" />
-            <b>{startTime} - {endTime}</b>
-          </span>
-          {course.room && (
-            <span className="bg-white/70 rounded-xl px-3.5 py-1 text-[0.95rem] font-medium text-[#151515] shadow-[0_1px_2px_rgba(185,211,221,0.097)]">
-              <i className="fas fa-door-open mr-1" />
-              Room <b>{course.room}</b>
-            </span>
-          )}
-        </div>
+        </MetaChip>
+        {course.room && <MetaChip icon="fa-door-open">Room {course.room}</MetaChip>}
       </div>
     </div>
   );

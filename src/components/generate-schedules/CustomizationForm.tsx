@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import type { ReactNode } from 'react';
 import type { GenerateRequest } from '@/types/generate';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { OptionChip } from '@/components/ui/OptionChip';
 
 const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
 
@@ -25,15 +26,14 @@ interface CustomizationFormProps {
   onUpdate: (updates: Partial<GenerateRequest>) => void;
 }
 
+// Grouped, vertical preferences tuned for the left rail: each group leads with an
+// icon mini-header, and the whole set reflows to two columns when it has the room.
 export function CustomizationForm({ request, onUpdate }: CustomizationFormProps) {
-  const [expanded, setExpanded] = useState(true);
   const isMaxDays = request.isNumberOfDaysSelected;
-  const allDaysSelected =
-    !isMaxDays && request.selectedDays.every(Boolean);
+  const allDaysSelected = !isMaxDays && request.selectedDays.every(Boolean);
+  const badRange = request.daysStart >= request.daysEnd;
 
-  const setSelectedDays = (days: boolean[]) => {
-    onUpdate({ selectedDays: days });
-  };
+  const setSelectedDays = (days: boolean[]) => onUpdate({ selectedDays: days });
 
   const toggleDay = (index: number) => {
     const next = [...request.selectedDays];
@@ -42,214 +42,199 @@ export function CustomizationForm({ request, onUpdate }: CustomizationFormProps)
   };
 
   const setAllDays = (checked: boolean) => {
-    setSelectedDays(checked ? [true, true, true, true, true, true] : [false, false, false, false, false, false]);
+    setSelectedDays(
+      checked ? [true, true, true, true, true, true] : [false, false, false, false, false, false]
+    );
   };
 
   return (
-    <section className="my-8">
-      <div className="text-center mb-8">
-        <h2 className="text-[var(--light-text)] text-[1.7rem] font-semibold m-0 mb-2.5">
-          Customize Your Schedule
-        </h2>
-        <p className="text-[var(--dark-text)] text-[1.1rem] m-0 opacity-90">
-          Fine-tune your preferences to generate the perfect schedule
-        </p>
-      </div>
-
-      <div className="lg:hidden mb-4">
-        <button
-          type="button"
-          onClick={() => setExpanded((e) => !e)}
-          aria-expanded={expanded}
-          aria-controls="customization-options"
-          className="w-full py-3 px-4 rounded-lg bg-[var(--lighter-dark)] border border-white/10 text-[var(--light-text)] font-medium flex items-center justify-between gap-2"
-        >
-          <span>{expanded ? 'Hide' : 'Show'} advanced options</span>
-          <i className={`fas fa-chevron-${expanded ? 'up' : 'down'}`} aria-hidden />
-        </button>
-      </div>
-
-      <div
-        id="customization-options"
-        className={`grid grid-cols-1 gap-6 mb-8 sm:grid-cols-[repeat(auto-fit,minmax(280px,1fr))] ${expanded ? '' : 'hidden lg:grid'}`}
-      >
-        {/* Schedule Parameters */}
-        <div className="bg-[var(--lighter-dark)] rounded-2xl p-6 border border-white/10 shadow-lg hover:-translate-y-1 transition-transform">
-          <div className="flex items-center gap-3 mb-5 pb-4 border-b-2 border-white/10">
-            <i className="fas fa-sliders-h text-[var(--light-blue)] text-[1.3rem]" />
-            <h3 className="text-[var(--light-text)] m-0 text-[1.2rem] font-semibold">
-              Schedule Parameters
-            </h3>
-          </div>
-          <div className="flex flex-col gap-5">
+    <div
+      id="preferences-panel"
+      className="@container rounded-xl bg-[var(--lighter-dark)] border border-white/10 p-4 sm:p-5"
+    >
+      <div className="grid grid-cols-1 gap-x-8 gap-y-7 @2xl:grid-cols-2">
+        {/* Days */}
+        <Group icon="fa-calendar-week" title="Days on campus">
+          <fieldset className="border-0 p-0 m-0">
+            <legend className="sr-only">How to choose your days</legend>
+            <div className="grid grid-cols-2 gap-2">
+              <OptionChip
+                type="radio"
+                name="day-method"
+                label="Limit total days"
+                checked={isMaxDays}
+                onChange={() => onUpdate({ isNumberOfDaysSelected: true })}
+              />
+              <OptionChip
+                type="radio"
+                name="day-method"
+                label="Pick specific days"
+                checked={!isMaxDays}
+                onChange={() => onUpdate({ isNumberOfDaysSelected: false })}
+              />
+            </div>
+          </fieldset>
+          {isMaxDays ? (
             <SliderControl
-              label="Minimum Slots per Day"
-              value={request.minimumNumberOfItemsPerDay}
-              min={0}
-              max={5}
-              onChange={(v) => onUpdate({ minimumNumberOfItemsPerDay: v })}
-              hint="0 = No minimum (recommended for flexibility)"
+              label="Maximum days on campus"
+              value={request.numberOfDays}
+              min={1}
+              max={6}
+              onChange={(v) => onUpdate({ numberOfDays: v })}
+              hint="5 keeps it to Saturday–Wednesday (recommended)"
             />
-            <SliderControl
-              label="Maximum Gap Period (hours)"
-              value={request.largestAllowedGap}
-              min={0}
-              max={8}
-              onChange={(v) => onUpdate({ largestAllowedGap: v })}
-              hint="0 = No minimum (recommended for flexibility)"
-            />
-            <SliderControl
-              label="Maximum Number of Schedules"
-              value={request.maxNumberOfGeneratedSchedules}
-              min={5}
-              max={50}
-              onChange={(v) => onUpdate({ maxNumberOfGeneratedSchedules: v })}
-              hint="15 schedules provide good variety without overwhelming"
-            />
-          </div>
-        </div>
+          ) : (
+            <fieldset className="border-0 p-0 m-0">
+              <legend className="sr-only">Days to attend</legend>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-2">
+                <OptionChip
+                  type="checkbox"
+                  label="All week"
+                  checked={allDaysSelected}
+                  onChange={(v) => setAllDays(v)}
+                />
+                {DAYS_OF_WEEK.map((day, i) => (
+                  <OptionChip
+                    key={day}
+                    type="checkbox"
+                    label={day}
+                    checked={request.selectedDays[i]}
+                    disabled={allDaysSelected}
+                    onChange={() => toggleDay(i)}
+                  />
+                ))}
+              </div>
+            </fieldset>
+          )}
+        </Group>
 
-        {/* Student Options */}
-        <div className="bg-[var(--lighter-dark)] rounded-2xl p-6 border border-white/10 shadow-lg hover:-translate-y-1 transition-transform">
-          <div className="flex items-center gap-3 mb-5 pb-4 border-b-2 border-white/10">
-            <i className="fas fa-user-graduate text-[var(--light-blue)] text-[1.3rem]" />
-            <h3 className="text-[var(--light-text)] m-0 text-[1.2rem] font-semibold">
-              Student Options
-            </h3>
-          </div>
-          <div className="flex flex-col gap-5">
-            <CheckboxControl
-              label="Engineering Student"
-              desc="Consider lab and tutorial sections together"
+        {/* Class hours */}
+        <Group icon="fa-clock" title="Class hours">
+          <fieldset className="border-0 p-0 m-0">
+            <legend className="text-[var(--light-text)] text-sm font-medium p-0 mb-2">
+              Earliest start
+            </legend>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(92px,1fr))] gap-2">
+              {DAYS_START_OPTIONS.map((opt) => (
+                <OptionChip
+                  key={opt.value}
+                  type="radio"
+                  name="daysStart"
+                  label={opt.label}
+                  checked={request.daysStart === opt.value}
+                  onChange={() => onUpdate({ daysStart: opt.value })}
+                />
+              ))}
+            </div>
+            <p className="text-[var(--dark-text)] text-xs mt-2">10:30 AM skips early morning classes</p>
+          </fieldset>
+          <fieldset className="border-0 p-0 m-0">
+            <legend className="text-[var(--light-text)] text-sm font-medium p-0 mb-2">
+              Latest end
+            </legend>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(92px,1fr))] gap-2">
+              {DAYS_END_OPTIONS.map((opt) => (
+                <OptionChip
+                  key={opt.value}
+                  type="radio"
+                  name="daysEnd"
+                  label={opt.label}
+                  checked={request.daysEnd === opt.value}
+                  onChange={() => onUpdate({ daysEnd: opt.value })}
+                />
+              ))}
+            </div>
+            <p className="text-[var(--dark-text)] text-xs mt-2">6:30 PM leaves your evenings free</p>
+          </fieldset>
+          {badRange && (
+            <p role="alert" className="text-[var(--btn-danger)] text-sm flex items-center gap-2">
+              <i className="fas fa-triangle-exclamation" aria-hidden />
+              Set an earliest start before the latest end, or no schedules will fit.
+            </p>
+          )}
+        </Group>
+
+        {/* Schedule limits */}
+        <Group icon="fa-sliders" title="Schedule limits">
+          <SliderControl
+            label="Minimum slots per day"
+            value={request.minimumNumberOfItemsPerDay}
+            min={0}
+            max={5}
+            onChange={(v) => onUpdate({ minimumNumberOfItemsPerDay: v })}
+            hint="0 = no minimum (recommended)"
+          />
+          <SliderControl
+            label="Maximum gap between classes (hours)"
+            value={request.largestAllowedGap}
+            min={0}
+            max={8}
+            onChange={(v) => onUpdate({ largestAllowedGap: v })}
+            hint="0 = no limit (recommended)"
+          />
+          <SliderControl
+            label="Maximum schedules to generate"
+            value={request.maxNumberOfGeneratedSchedules}
+            min={5}
+            max={50}
+            onChange={(v) => onUpdate({ maxNumberOfGeneratedSchedules: v })}
+            hint="15 gives good variety without overwhelming"
+          />
+        </Group>
+
+        {/* Options */}
+        <Group icon="fa-gear" title="Options">
+          <div className="flex items-start gap-2">
+            <OptionChip
+              type="checkbox"
+              className="flex-1"
+              label="Engineering student"
+              desc="Pair lab and tutorial sections together"
               checked={request.isEngineering}
               onChange={(v) => onUpdate({ isEngineering: v })}
-              tooltip="This considers different sections of labs and tutorials together. For example: if a course needs a lab and a tutorial to be considered together, then when considering lecture 1, it will consider lab 1A and tutorial 1B together, etc."
             />
-            <CheckboxControl
-              label="Only Available Seats"
-              desc="Exclude sections with zero available seats"
+            <Tooltip
+              content="Considers different sections of labs and tutorials together. For example: when a course needs a lab and a tutorial paired, lecture 1 is matched with lab 1A and tutorial 1B together, etc."
+              label="More information"
+            >
+              <i className="fas fa-info-circle text-[var(--dark-text)] mt-3" aria-hidden />
+            </Tooltip>
+          </div>
+          <div className="flex items-start gap-2">
+            <OptionChip
+              type="checkbox"
+              className="flex-1"
+              label="Only sections with open seats"
+              desc="Skip sections with zero available seats"
               checked={request.considerZeroSeats}
               onChange={(v) => onUpdate({ considerZeroSeats: v })}
-              tooltip="This will only consider course items where there are available seats. If you don't check this, it will consider all courses regardless of the number of seats left."
             />
+            <Tooltip
+              content="Only considers course sections that still have available seats. Leave unchecked to consider all sections regardless of seats left."
+              label="More information"
+            >
+              <i className="fas fa-info-circle text-[var(--dark-text)] mt-3" aria-hidden />
+            </Tooltip>
           </div>
-        </div>
-
-        {/* Days Configuration */}
-        <div className="bg-[var(--lighter-dark)] rounded-2xl p-6 border border-white/10 shadow-lg hover:-translate-y-1 transition-transform">
-          <div className="flex items-center gap-3 mb-5 pb-4 border-b-2 border-white/10">
-            <i className="fas fa-calendar-week text-[var(--light-blue)] text-[1.3rem]" />
-            <h3 className="text-[var(--light-text)] m-0 text-[1.2rem] font-semibold">
-              Days Configuration
-            </h3>
-          </div>
-          <div className="flex flex-col gap-4">
-            <div>
-              <h4 className="text-[var(--light-text)] m-0 mb-4 text-base font-medium">
-                Day Selection Method
-              </h4>
-              <div className="flex gap-5">
-                <RadioControl
-                  label="Maximum Days"
-                  checked={isMaxDays}
-                  onChange={() => onUpdate({ isNumberOfDaysSelected: true })}
-                />
-                <RadioControl
-                  label="Specific Days"
-                  checked={!isMaxDays}
-                  onChange={() => onUpdate({ isNumberOfDaysSelected: false })}
-                />
-              </div>
-            </div>
-            {isMaxDays ? (
-              <div className="mt-4 p-4 rounded-lg bg-white/5">
-                <SliderControl
-                  label="Maximum Days on Campus"
-                  value={request.numberOfDays}
-                  min={1}
-                  max={6}
-                  onChange={(v) => onUpdate({ numberOfDays: v })}
-                  hint="5 days allows weekday-only schedules (recommended)"
-                />
-              </div>
-            ) : (
-              <div className="mt-4 p-4 rounded-lg bg-white/5">
-                <h4 className="text-[var(--light-text)] m-0 mb-2.5 text-base font-medium">
-                  Select Days on Campus
-                </h4>
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(100px,1fr))] gap-2.5 mt-2.5">
-                  <DayCheckbox
-                    label="All Week"
-                    checked={allDaysSelected}
-                    onChange={(v) => setAllDays(v)}
-                  />
-                  {DAYS_OF_WEEK.map((day, i) => (
-                    <DayCheckbox
-                      key={day}
-                      label={day}
-                      checked={request.selectedDays[i]}
-                      disabled={allDaysSelected}
-                      onChange={() => toggleDay(i)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Time Preferences */}
-        <div className="bg-[var(--lighter-dark)] rounded-2xl p-6 border border-white/10 shadow-lg hover:-translate-y-1 transition-transform">
-          <div className="flex items-center gap-3 mb-5 pb-4 border-b-2 border-white/10">
-            <i className="fas fa-clock text-[var(--light-blue)] text-[1.3rem]" />
-            <h3 className="text-[var(--light-text)] m-0 text-[1.2rem] font-semibold">
-              Time Preferences
-            </h3>
-          </div>
-          <div className="flex flex-col gap-5">
-            <div>
-              <h4 className="text-[var(--light-text)] m-0 mb-3 text-base font-medium">
-                First Slot Start Time
-              </h4>
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(100px,1fr))] gap-2">
-                {DAYS_START_OPTIONS.map((opt) => (
-                  <TimeRadio
-                    key={opt.value}
-                    name="daysStart"
-                    label={opt.label}
-                    value={opt.value}
-                    checked={request.daysStart === opt.value}
-                    onChange={() => onUpdate({ daysStart: opt.value })}
-                  />
-                ))}
-              </div>
-              <p className="text-[var(--dark-text)] text-[0.75rem] opacity-70 mt-1.5 italic">
-                10:30 AM avoids early morning classes
-              </p>
-            </div>
-            <div>
-              <h4 className="text-[var(--light-text)] m-0 mb-3 text-base font-medium">
-                Last Slot End Time
-              </h4>
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(100px,1fr))] gap-2">
-                {DAYS_END_OPTIONS.map((opt) => (
-                  <TimeRadio
-                    key={opt.value}
-                    name="daysEnd"
-                    label={opt.label}
-                    value={opt.value}
-                    checked={request.daysEnd === opt.value}
-                    onChange={() => onUpdate({ daysEnd: opt.value })}
-                  />
-                ))}
-              </div>
-              <p className="text-[var(--dark-text)] text-[0.75rem] opacity-70 mt-1.5 italic">
-                6:30 PM allows reasonable work/life balance
-              </p>
-            </div>
-          </div>
-        </div>
+        </Group>
       </div>
+    </div>
+  );
+}
+
+function Group({ icon, title, children }: { icon: string; title: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3.5 min-w-0">
+      <div className="flex items-center gap-2.5">
+        <span
+          aria-hidden
+          className="grid place-items-center w-7 h-7 rounded-lg bg-[var(--light-blue)]/15 text-[var(--light-blue)] text-xs shrink-0"
+        >
+          <i className={`fas ${icon}`} />
+        </span>
+        <h3 className="text-[var(--light-text)] text-base font-semibold m-0">{title}</h3>
+      </div>
+      {children}
     </section>
   );
 }
@@ -272,146 +257,33 @@ function SliderControl({
   const id = `slider-${label.replace(/\s/g, '-').toLowerCase()}`;
   return (
     <div className="flex flex-col gap-2">
-      <label id={`${id}-label`} htmlFor={id} className="text-[var(--light-text)] font-medium text-[0.95rem]">
-        {label}
-      </label>
-      <div className="flex items-center gap-4">
-        <input
-          id={id}
-          type="range"
-          min={min}
-          max={max}
-          value={value}
-          aria-valuemin={min}
-          aria-valuemax={max}
-          aria-valuenow={value}
-          aria-valuetext={String(value)}
-          aria-labelledby={`${id}-label`}
-          onChange={(e) => onChange(parseInt(e.target.value, 10))}
-          className="flex-1 h-1.5 rounded bg-[var(--dark)] outline-none appearance-none focus-visible:ring-2 focus-visible:ring-[var(--light-blue)] focus-visible:ring-offset-2 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--light-blue)] [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:cursor-pointer"
-        />
-        <span className="min-w-[30px] py-1 px-2.5 rounded-2xl bg-[var(--light-blue)] text-white font-semibold text-[0.9rem] text-center">
+      <div className="flex items-center justify-between gap-2">
+        <label id={`${id}-label`} htmlFor={id} className="text-[var(--light-text)] font-medium text-sm">
+          {label}
+        </label>
+        <span className="min-w-[2rem] py-0.5 px-2.5 rounded-md bg-white/10 border border-white/10 text-[var(--light-text)] font-semibold text-sm text-center tabular-nums">
           {value}
         </span>
       </div>
-      <p className="text-[var(--dark-text)] text-[0.75rem] opacity-70 mt-1 italic">{hint}</p>
-    </div>
-  );
-}
-
-function CheckboxControl({
-  label,
-  desc,
-  checked,
-  onChange,
-  tooltip,
-}: {
-  label: string;
-  desc: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  tooltip: string;
-}) {
-  return (
-    <div className="flex items-start gap-2.5">
-      <label className="flex items-start gap-3 cursor-pointer flex-1">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => onChange(e.target.checked)}
-          className="sr-only [&+span]:block [&+span]:w-5 [&+span]:h-5 [&+span]:rounded [&+span]:border-2 [&+span]:border-[var(--dark-text)] [&+span]:bg-[var(--dark)] [&:checked+span]:bg-[var(--light-blue)] [&:checked+span]:border-[var(--light-blue)] [&:checked+span]:after:content-['✓'] [&:checked+span]:after:absolute [&:checked+span]:after:top-1/2 [&:checked+span]:after:left-1/2 [&:checked+span]:after:-translate-x-1/2 [&:checked+span]:after:-translate-y-1/2 [&:checked+span]:after:text-white [&:checked+span]:after:text-sm [&:checked+span]:after:font-bold focus-visible:[&+span]:ring-2 focus-visible:[&+span]:ring-[var(--light-blue)] focus-visible:[&+span]:ring-offset-2"
-        />
-        <span className="relative shrink-0 mt-0.5" />
-        <div className="flex flex-col gap-1">
-          <span className="text-[var(--light-text)] font-medium text-[0.95rem]">{label}</span>
-          <span className="text-[var(--dark-text)] text-[0.85rem] opacity-80">{desc}</span>
-        </div>
-      </label>
-      <Tooltip content={tooltip} label="More information">
-        <i className="fas fa-info-circle text-[var(--dark-text)]" aria-hidden />
-      </Tooltip>
-    </div>
-  );
-}
-
-function RadioControl({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <label className="flex items-center gap-2 cursor-pointer text-[var(--light-text)] text-[0.95rem]">
-        <input
-        type="radio"
-        checked={checked}
-        onChange={onChange}
-        className="sr-only [&+span]:block [&+span]:w-[18px] [&+span]:h-[18px] [&+span]:rounded-full [&+span]:border-2 [&+span]:border-[var(--dark-text)] [&:checked+span]:border-[var(--light-blue)] [&:checked+span]:after:content-[''] [&:checked+span]:after:absolute [&:checked+span]:after:top-1/2 [&:checked+span]:after:left-1/2 [&:checked+span]:after:-translate-x-1/2 [&:checked+span]:after:-translate-y-1/2 [&:checked+span]:after:w-2 [&:checked+span]:after:h-2 [&:checked+span]:after:rounded-full [&:checked+span]:after:bg-[var(--light-blue)] focus-visible:[&+span]:ring-2 focus-visible:[&+span]:ring-[var(--light-blue)] focus-visible:[&+span]:ring-offset-2"
-      />
-      <span className="relative shrink-0" />
-      {label}
-    </label>
-  );
-}
-
-function DayCheckbox({
-  label,
-  checked,
-  disabled,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  disabled?: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label
-      className={`flex items-center gap-2 cursor-pointer text-[var(--light-text)] text-[0.9rem] p-2 rounded-md transition-colors hover:bg-white/5 ${
-        disabled ? 'opacity-60 cursor-not-allowed' : ''
-      }`}
-    >
       <input
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.checked)}
-        className="sr-only [&+span]:block [&+span]:w-4 [&+span]:h-4 [&+span]:rounded-sm [&+span]:border-2 [&+span]:border-[var(--dark-text)] [&:checked+span]:bg-[var(--light-blue)] [&:checked+span]:border-[var(--light-blue)] [&:checked+span]:after:content-['✓'] [&:checked+span]:after:absolute [&:checked+span]:after:top-1/2 [&:checked+span]:after:left-1/2 [&:checked+span]:after:-translate-x-1/2 [&:checked+span]:after:-translate-y-1/2 [&:checked+span]:after:text-white [&:checked+span]:after:text-[11px] [&:checked+span]:after:font-bold focus-visible:[&+span]:ring-2 focus-visible:[&+span]:ring-[var(--light-blue)] focus-visible:[&+span]:ring-offset-2"
-      />
-      <span className="relative shrink-0" />
-      {label}
-    </label>
-  );
-}
-
-function TimeRadio({
-  name,
-  label,
-  value,
-  checked,
-  onChange,
-}: {
-  name: string;
-  label: string;
-  value: string;
-  checked: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <label className="flex items-center gap-2 cursor-pointer text-[var(--light-text)] text-[0.9rem] py-2 px-3 rounded-md border border-[var(--dark-text)] bg-white/[0.02] transition-colors hover:bg-white/5 hover:border-[var(--light-blue)]">
-      <input
-        type="radio"
-        name={name}
+        id={id}
+        type="range"
+        min={min}
+        max={max}
         value={value}
-        checked={checked}
-        onChange={onChange}
-        className="sr-only [&+span]:block [&+span]:w-3.5 [&+span]:h-3.5 [&+span]:rounded-full [&+span]:border-2 [&+span]:border-[var(--dark-text)] [&:checked+span]:border-[var(--light-blue)] [&:checked+span]:bg-[var(--light-blue)] [&:checked+span]:after:content-[''] [&:checked+span]:after:absolute [&:checked+span]:after:top-1/2 [&:checked+span]:after:left-1/2 [&:checked+span]:after:-translate-x-1/2 [&:checked+span]:after:-translate-y-1/2 [&:checked+span]:after:w-1 [&:checked+span]:after:h-1 [&:checked+span]:after:rounded-full [&:checked+span]:after:bg-white focus-visible:[&+span]:ring-2 focus-visible:[&+span]:ring-[var(--light-blue)] focus-visible:[&+span]:ring-offset-2"
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
+        aria-valuetext={String(value)}
+        aria-labelledby={`${id}-label`}
+        onChange={(e) => onChange(parseInt(e.target.value, 10))}
+        className="w-full h-1.5 rounded bg-[var(--dark)] outline-none appearance-none focus-visible:ring-2 focus-visible:ring-[var(--light-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--lighter-dark)] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--light-blue)] [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:cursor-pointer"
       />
-      <span className="relative shrink-0" />
-      {label}
-    </label>
+      <div className="flex justify-between text-[0.68rem] text-[var(--dark-text)] tabular-nums">
+        <span>{min}</span>
+        <span>{max}</span>
+      </div>
+      <p className="text-[var(--dark-text)] text-xs">{hint}</p>
+    </div>
   );
 }

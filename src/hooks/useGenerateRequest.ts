@@ -99,5 +99,14 @@ export function useGenerateRequest() {
     setRequest((prev) => ({ ...prev, ...updates }));
   }, []);
 
-  return { request, saveRequest, updateRequest, DAYS_OF_WEEK };
+  const resetRequest = useCallback(() => {
+    setRequest((prev) => ({
+      ...defaultRequest,
+      // Preserve the cart-derived fields; only constraint prefs reset.
+      selectedItems: prev.selectedItems,
+      customSelectedItems: prev.customSelectedItems,
+    }));
+  }, []);
+
+  return { request, saveRequest, updateRequest, resetRequest, DAYS_OF_WEEK };
 }

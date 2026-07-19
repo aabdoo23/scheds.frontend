@@ -1,3 +1,5 @@
+import { OptionChip } from '@/components/ui/OptionChip';
+
 export interface DisplayFilters {
   showTimeline: boolean;
   showBusyPeriods: boolean;
@@ -16,56 +18,37 @@ export function FiltersSection({ filters, onFiltersChange }: FiltersSectionProps
   };
 
   return (
-    <div className="bg-[var(--lighter-dark)] shadow-[0_4px_20px_rgba(0,0,0,0.1)] p-6 rounded-xl flex-1 min-w-[300px]">
-      <h2 className="text-2xl mb-5 text-[var(--light-text)]">
-        <i className="fas fa-filter mr-2" />
-        Display Options
-      </h2>
-      <div className="flex flex-col gap-4">
-        <label className="flex items-center gap-2.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={filters.showTimeline}
-            onChange={(e) => update('showTimeline', e.target.checked)}
-            className="w-5 h-5 cursor-pointer"
-          />
-          <span className="text-[var(--light-text)]">Show Timeline View</span>
-        </label>
-        <label className="flex items-center gap-2.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={filters.showBusyPeriods}
-            onChange={(e) => update('showBusyPeriods', e.target.checked)}
-            className="w-5 h-5 cursor-pointer"
-          />
-          <span className="text-[var(--light-text)]">Show Busy Periods</span>
-        </label>
-        <label className="flex items-center gap-2.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={filters.groupByBuilding}
-            onChange={(e) => update('groupByBuilding', e.target.checked)}
-            className="w-5 h-5 cursor-pointer"
-          />
-          <span className="text-[var(--light-text)]">Group by Building</span>
-        </label>
-        <label className="flex items-center gap-2.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={filters.onlyAvailableNow}
-            onChange={(e) => update('onlyAvailableNow', e.target.checked)}
-            className="w-5 h-5 cursor-pointer"
-          />
-          <span className="text-[var(--light-text)]">Only Show Currently Available</span>
-        </label>
+    <div className="bg-[var(--lighter-dark)] rounded-xl p-5 border border-white/10">
+      <h2 className="text-[var(--light-text)] text-xl font-semibold m-0 mb-4">Display options</h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <OptionChip
+          type="checkbox"
+          label="Timeline view"
+          checked={filters.showTimeline}
+          onChange={(v) => update('showTimeline', v)}
+        />
+        <OptionChip
+          type="checkbox"
+          label="Busy periods"
+          checked={filters.showBusyPeriods}
+          onChange={(v) => update('showBusyPeriods', v)}
+        />
+        <OptionChip
+          type="checkbox"
+          label="Group by building"
+          checked={filters.groupByBuilding}
+          onChange={(v) => update('groupByBuilding', v)}
+        />
       </div>
-      <div className="mt-5 p-4 bg-[var(--dark)] rounded-lg">
-        <p className="text-[0.9rem] text-[var(--light-text)] m-0">
-          <i className="fas fa-info-circle mr-2" />
-          <strong>Tip:</strong> Use the minimum duration filter to find rooms available for longer
-          study sessions.
-        </p>
-      </div>
+
+      <p className="mt-4 flex items-start gap-2 rounded-lg bg-white/[0.03] border border-white/10 p-3 text-xs text-[var(--dark-text)] m-0">
+        <i className="fas fa-circle-info mt-0.5" aria-hidden />
+        <span>
+          <span className="text-[var(--light-text)] font-medium">Tip:</span> raise the minimum free
+          block to find rooms open long enough for a full study session.
+        </span>
+      </p>
     </div>
   );
 }

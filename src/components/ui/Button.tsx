@@ -13,9 +13,9 @@ const variantClasses: Record<ButtonVariant, string> = {
   secondary:
     'bg-[var(--lighter)] text-[var(--light-text)] border border-white/10 hover:bg-white/10',
   danger:
-    'bg-[#dc3545] text-white border-none hover:bg-[#c82333] disabled:opacity-50 disabled:cursor-not-allowed',
+    'bg-[var(--btn-danger)] text-white border-none hover:bg-[var(--btn-danger-hover)] disabled:opacity-50 disabled:cursor-not-allowed',
   ghost:
-    'bg-transparent text-[var(--light-text)] border border-[var(--light-text)] hover:bg-[#dc3545] hover:border-[#dc3545] disabled:opacity-50 disabled:cursor-not-allowed',
+    'bg-transparent text-[var(--light-text)] border border-white/20 hover:bg-white/10 hover:border-white/30 disabled:opacity-50 disabled:cursor-not-allowed',
 };
 
 export function Button({

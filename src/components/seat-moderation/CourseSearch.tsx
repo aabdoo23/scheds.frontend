@@ -1,4 +1,5 @@
 import type { CourseSearchItem } from '@/types/seatModeration';
+import { Button } from '@/components/ui/Button';
 
 interface CourseSearchProps {
   query: string;
@@ -86,19 +87,15 @@ export function CourseSearch({
                 </option>
               ))}
             </select>
-            <button
-              type="button"
+            <Button
               onClick={onAddToCart}
               disabled={!selectedSection || sectionsLoading || addDisabled}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-white bg-[var(--light-blue)] border-none cursor-pointer transition-colors hover:bg-[var(--dark-blue)] disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-busy={addDisabled}
+              className="shrink-0"
             >
-              {addDisabled ? (
-                <i className="fas fa-spinner fa-spin" />
-              ) : (
-                <i className="fas fa-plus" />
-              )}
-              Add to Cart
-            </button>
+              <i className={`fas ${addDisabled ? 'fa-circle-notch fa-spin' : 'fa-plus'} mr-2`} aria-hidden />
+              Add
+            </Button>
           </div>
         </div>
       )}
