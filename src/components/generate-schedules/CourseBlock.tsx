@@ -19,7 +19,9 @@ export function CourseBlock({ item }: CourseBlockProps) {
 
   const start = parseTimeToMinutes(item.startTime);
   const end = parseTimeToMinutes(item.endTime);
-  const dense = end - start < 75; // ~1-hour blocks: room only for the code
+  const compact = end - start < 75; // ~1-hour slots: no room for a bottom bar → left color band
+  const sectionLabel = `${item.subType} ${item.section}`.trim();
+  const typeAbbr = item.subType ? item.subType.slice(0, 3).toUpperCase() : '';
 
   const place = useCallback(() => {
     const el = btnRef.current;
@@ -72,29 +74,56 @@ export function CourseBlock({ item }: CourseBlockProps) {
         onClick={toggle}
         aria-expanded={open}
         aria-label={`${item.courseCode} ${item.courseName}, ${item.subType} ${item.section}, ${formatClock(start)} to ${formatClock(end)}. Show details.`}
-        className="w-full h-full rounded-lg overflow-hidden flex flex-col text-left cursor-pointer bg-[var(--lighter)] border border-white/10 shadow transition-shadow duration-150 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--light-blue)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--lighter-dark)]"
+        className={`w-full h-full rounded-lg overflow-hidden flex text-left cursor-pointer bg-[var(--lighter)] border border-white/10 shadow transition-shadow duration-150 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--light-blue)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--lighter-dark)] ${
+          compact ? 'items-stretch' : 'flex-col'
+        }`}
       >
-        <div className="flex-1 min-h-0 px-2 py-1.5 flex flex-col gap-0.5 overflow-hidden">
-          <span className="font-bold text-sm leading-tight text-[var(--light-text)] truncate">
-            {item.courseCode}
-          </span>
-          {!dense && (
-            <>
-              <span className="text-xs leading-tight text-[var(--light-text)] line-clamp-2">
+        {compact ? (
+          <>
+            {/* short slot — the colored section becomes a labeled vertical band on the left */}
+            <span
+              className="shrink-0 w-9 flex flex-col items-center justify-center gap-0.5 px-1 leading-none text-center"
+              style={{ backgroundColor: color.bg, color: color.text }}
+            >
+              {typeAbbr && (
+                <span className="text-[10px] font-bold uppercase tracking-wide">{typeAbbr}</span>
+              )}
+              {item.section && (
+                <span className="text-xs font-bold tabular-nums">{item.section}</span>
+              )}
+            </span>
+            <span className="flex-1 min-w-0 px-2 py-1 flex flex-col justify-center gap-0.5 overflow-hidden">
+              <span className="font-bold text-[15px] leading-tight text-[var(--light-text)] truncate">
+                {item.courseCode}
+              </span>
+              {item.courseName && (
+                <span className="text-xs leading-tight text-[var(--dark-text)] truncate">
+                  {item.courseName}
+                </span>
+              )}
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="flex-1 min-h-0 px-2.5 py-2 flex flex-col gap-0.5 overflow-hidden">
+              <span className="font-bold text-[15px] leading-tight text-[var(--light-text)] truncate">
+                {item.courseCode}
+              </span>
+              <span className="text-[13px] leading-snug text-[var(--light-text)] line-clamp-2">
                 {item.courseName}
               </span>
               <span className="text-xs leading-tight text-[var(--dark-text)] truncate">
                 {item.instructorName}
               </span>
-            </>
-          )}
-        </div>
-        <div
-          className="shrink-0 px-2 py-1 text-xs font-semibold leading-tight truncate"
-          style={{ backgroundColor: color.bg, color: color.text }}
-        >
-          {item.subType} {item.section}
-        </div>
+            </span>
+            <span
+              className="shrink-0 px-2 py-2 text-[13px] font-bold leading-none text-center truncate"
+              style={{ backgroundColor: color.bg, color: color.text }}
+            >
+              {sectionLabel}
+            </span>
+          </>
+        )}
       </button>
 
       {open && (

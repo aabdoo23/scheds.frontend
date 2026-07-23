@@ -88,6 +88,108 @@ body {
   animation: orbit-float 7s ease-in-out infinite;
 }
 
+/* Home hero — "the sort" choreography: grid blocks snap into their slots and the
+   section cards stream up the current out of the grid. The global reduced-motion
+   rule above neutralizes the animations; the initial hidden state below lives inside
+   a no-preference query so blocks/cards stay visible when motion is reduced. */
+@keyframes sort-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sort-launch {
+  from {
+    opacity: 0;
+    transform: translate(var(--lx, -200px), var(--ly, 180px)) scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .home-hero .sort-blk,
+  .home-hero .sort-card {
+    opacity: 0;
+  }
+  .home-hero.sort-run .sort-blk {
+    animation: sort-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .home-hero.sort-run .sort-card {
+    animation: sort-launch 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+/* Hover choreography. Transform hovers live on inner wrappers so they never fight
+   the launch/pop animations, which own `transform` via fill-mode: both on the
+   outer .sort-card / .sort-blk. Each card gets a distinct, motivated personality. */
+.sort-card {
+  perspective: 1000px;
+}
+.sort-card-inner {
+  transform: rotate(var(--rot, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+.sort-card-face {
+  transition: box-shadow 0.35s ease, border-color 0.35s ease;
+}
+/* settle — snaps level and lifts, like a section dropping into its slot */
+.sort-card:hover .sort-card-inner[data-hover='settle'] {
+  transform: rotate(0deg) translateY(-12px);
+}
+/* lift — leans forward and rises, the section you're reaching for */
+.sort-card:hover .sort-card-inner[data-hover='lift'] {
+  transform: rotate(var(--rot, 0deg)) translateY(-13px) scale(1.035);
+}
+/* tilt — faces the cursor in 3D; --rx/--ry written by pointer handler, eased back on leave */
+.sort-card-inner[data-hover='tilt'] {
+  transform: rotate(var(--rot, 0deg)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.18s ease-out;
+}
+.sort-card:hover .sort-card-face {
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.62);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* The schedule hub — hovering re-runs the sort: blocks burst outward, then reassemble.
+   The colored fill sits on an inner .blk-fill so its explosion transform is free of the
+   sort-pop fill-mode that owns the outer .sort-blk transform. */
+.schedule-hub {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s ease;
+}
+.schedule-hub:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 34px 74px rgba(0, 0, 0, 0.6);
+}
+.blk-fill {
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--i, 0) * 28ms);
+  will-change: transform;
+}
+.schedule-hub:hover .blk-fill {
+  transform: translate(var(--ex, 0px), var(--ey, 0px)) rotate(var(--er, 0deg)) scale(1.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sort-card-inner,
+  .blk-fill,
+  .schedule-hub {
+    transition: none !important;
+  }
+  .sort-card:hover .sort-card-inner,
+  .schedule-hub:hover,
+  .schedule-hub:hover .blk-fill {
+    transform: none !important;
+  }
+}
+
 .schedules-scroll {
   scrollbar-width: thin;
   scrollbar-color: var(--dark-text) transparent;
