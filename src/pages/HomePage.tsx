@@ -9,7 +9,7 @@ const secondaryCta =
 const quietLink =
   'inline-flex items-center gap-2 min-h-[44px] text-[var(--dark-text)] hover:text-[var(--light-text)] transition-colors no-underline text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--light-blue)] rounded';
 
-/* Faceted orange gem — the brand accent from the original hero, rebuilt as SVG. */
+/* Faceted orange gem , the brand accent from the original hero, rebuilt as SVG. */
 function Gem({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
     <svg className={className} style={style} viewBox="0 0 60 84" aria-hidden>
@@ -27,7 +27,7 @@ function Gem({ className, style }: { className?: string; style?: React.CSSProper
 const STAR_CLIP =
   'polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)';
 
-/* Each card's hover personality — motivated, not decorative:
+/* Each card's hover personality , motivated, not decorative:
    'lift'   leans forward and rises, the section you're reaching for
    'tilt'   faces the cursor in 3D, like a card you pick up to inspect
    'settle' snaps level and drops, like a section landing in its slot */
@@ -238,7 +238,7 @@ export function HomePage() {
     };
   }, []);
 
-  // Cursor-follow tilt for the "inspect" card — 3D lean toward the pointer, eased back on leave.
+  // Cursor-follow tilt for the "inspect" card , 3D lean toward the pointer, eased back on leave.
   useEffect(() => {
     const el = heroRef.current;
     if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -275,7 +275,7 @@ export function HomePage() {
         className="absolute inset-0 z-0 pointer-events-none opacity-[0.22] [background-image:linear-gradient(rgba(255,255,255,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.10)_1px,transparent_1px)] [background-size:60px_60px] [mask-image:radial-gradient(120%_100%_at_70%_30%,#000_42%,transparent_80%)] [-webkit-mask-image:radial-gradient(120%_100%_at_70%_30%,#000_42%,transparent_80%)]"
       />
 
-      {/* decorative brand current — lg+ only; smaller screens get a clean copy-first hero */}
+      {/* decorative brand current , lg+ only; smaller screens get a clean copy-first hero */}
       <div aria-hidden className="hidden lg:block absolute inset-0 z-[1] pointer-events-none">
         {/* glows */}
         <div className="absolute -right-[6%] -top-[16%] w-[720px] h-[620px] rounded-full blur-[70px] [background:radial-gradient(circle,rgba(0,90,134,0.5),transparent_68%)]" />
@@ -305,7 +305,7 @@ export function HomePage() {
         className="orbit-bob hidden lg:block absolute left-[52.5%] top-[52%] w-[74px] h-[104px] z-[4] rotate-[14deg] [filter:drop-shadow(0_0_22px_rgba(255,115,0,0.5))]"
       />
 
-      {/* the sort bench — the schedule hub the cards sorted out of. Hovering re-runs
+      {/* the sort bench , the schedule hub the cards sorted out of. Hovering re-runs
           the sort: the blocks burst outward, then reassemble. */}
       <div
         aria-hidden
@@ -423,7 +423,7 @@ export function HomePage() {
               <i className="fas fa-magnifying-glass" aria-hidden />
               Search sections
             </Link>
-            <Link to="/seat-moderation" className={quietLink}>
+            <Link to="/seat-alerts" className={quietLink}>
               <i className="fas fa-chair" aria-hidden />
               Seat requests
             </Link>

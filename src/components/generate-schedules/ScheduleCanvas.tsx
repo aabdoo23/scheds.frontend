@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ScheduleCardItem } from '@/types/generate';
+import type { ScheduleCardItem, BusyTime } from '@/types/generate';
 import { CourseBlock } from './CourseBlock';
 import {
   DAYS_OF_WEEK,
@@ -7,10 +7,36 @@ import {
   DAY_START_MIN,
   DAY_SPAN_MIN,
   blockPosition,
+  rangePosition,
   groupByDay,
   itemKey,
   formatHourLabel,
 } from '@/lib/scheduleView';
+
+// Diagonal hatch marking unavailable time , visually distinct from any course hue.
+const BUSY_HATCH =
+  'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.045) 5px, rgba(255,255,255,0.045) 10px)';
+
+function BusyBand({ block }: { block: BusyTime }) {
+  const { top, height } = rangePosition(block.startTime, block.endTime);
+  if (height <= 0) return null;
+  return (
+    <div
+      className="absolute inset-x-0.5 rounded-md border border-dashed border-white/15 overflow-hidden pointer-events-none"
+      style={{
+        top: `${top * 100}%`,
+        height: `${height * 100}%`,
+        backgroundColor: 'rgba(255,255,255,0.02)',
+        backgroundImage: BUSY_HATCH,
+      }}
+      aria-hidden
+    >
+      <span className="block px-1.5 py-0.5 text-[0.6rem] font-medium text-[var(--dark-text)] leading-tight truncate">
+        Busy
+      </span>
+    </div>
+  );
+}
 
 const HOUR_PX = 52;
 const CANVAS_HEIGHT = Math.round((DAY_SPAN_MIN / 60) * HOUR_PX);
@@ -36,7 +62,7 @@ function TimeAxis() {
   );
 }
 
-function DayColumn({ items }: { items: ScheduleCardItem[] }) {
+function DayColumn({ items, busy = [] }: { items: ScheduleCardItem[]; busy?: BusyTime[] }) {
   return (
     <div className="relative border-l border-white/5" style={{ height: CANVAS_HEIGHT }}>
       {HOURS.map((h) => (
@@ -46,6 +72,10 @@ function DayColumn({ items }: { items: ScheduleCardItem[] }) {
           style={{ top: `${hourTopPct(h)}%` }}
           aria-hidden
         />
+      ))}
+      {/* Busy bands paint under the course blocks */}
+      {busy.map((b, i) => (
+        <BusyBand key={`busy-${b.startTime}-${b.endTime}-${i}`} block={b} />
       ))}
       {items.map((it) => {
         const { top, height } = blockPosition(it);
@@ -65,10 +95,15 @@ function DayColumn({ items }: { items: ScheduleCardItem[] }) {
 
 interface ScheduleCanvasProps {
   items: ScheduleCardItem[];
+  busyTimes?: BusyTime[];
 }
 
-export function ScheduleCanvas({ items }: ScheduleCanvasProps) {
+export function ScheduleCanvas({ items, busyTimes = [] }: ScheduleCanvasProps) {
   const byDay = groupByDay(items);
+  const busyByDay = busyTimes.reduce<Record<number, BusyTime[]>>((acc, b) => {
+    if (b.day >= 0 && b.day <= 5) (acc[b.day] ??= []).push(b);
+    return acc;
+  }, {});
   const unscheduled = items.filter((i) => !DAYS_OF_WEEK.some((d) => d.toLowerCase() === (i.day ?? '').trim().toLowerCase()));
   const gridCols = { gridTemplateColumns: '3.5rem repeat(6, minmax(0, 1fr))' };
 
@@ -100,7 +135,7 @@ export function ScheduleCanvas({ items }: ScheduleCanvasProps) {
           <div className="grid" style={gridCols}>
             <TimeAxis />
             {DAYS_OF_WEEK.map((day, di) => (
-              <DayColumn key={day} items={byDay[di] ?? []} />
+              <DayColumn key={day} items={byDay[di] ?? []} busy={busyByDay[di] ?? []} />
             ))}
           </div>
         </div>
@@ -150,7 +185,7 @@ export function ScheduleCanvas({ items }: ScheduleCanvasProps) {
           style={{ gridTemplateColumns: '3.5rem 1fr' }}
         >
           <TimeAxis />
-          <DayColumn items={byDay[selectedDay] ?? []} />
+          <DayColumn items={byDay[selectedDay] ?? []} busy={busyByDay[selectedDay] ?? []} />
         </div>
       </div>
 
@@ -160,7 +195,7 @@ export function ScheduleCanvas({ items }: ScheduleCanvasProps) {
             Not scheduled
           </h4>
           <p className="text-[var(--dark-text)] text-xs m-0 mb-3">
-            These sections have no listed day/time — verify them on Self-Service.
+            These sections have no listed day/time , verify them on Self-Service.
           </p>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-2">
             {unscheduled.map((it) => (

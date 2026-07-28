@@ -14,7 +14,7 @@ function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
-// Floating local time (no timezone) — the calendar app interprets it in the
+// Floating local time (no timezone) , the calendar app interprets it in the
 // viewer's own zone, which is what a student wants for a class time.
 function icsStamp(d: Date): string {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(

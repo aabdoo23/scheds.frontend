@@ -95,8 +95,8 @@ export function AdminGenerationDetailsPage() {
         <div className="p-4 rounded-lg bg-[var(--lighter-dark)] border border-white/10">
           <h2 className="text-lg font-semibold text-[var(--light-text)] mb-4">Schedule Preferences</h2>
           <dl className="space-y-2 text-[var(--light-text)]">
-            <div className="flex justify-between"><dt>Min Items/Day:</dt><dd>{formatPreference(generation.minimumNumberOfItemsPerDay, '—')}</dd></div>
-            <div className="flex justify-between"><dt>Largest Gap:</dt><dd>{formatPreference(generation.largestAllowedGap, '—')}</dd></div>
+            <div className="flex justify-between"><dt>Min Items/Day:</dt><dd>{formatPreference(generation.minimumNumberOfItemsPerDay, ',')}</dd></div>
+            <div className="flex justify-between"><dt>Largest Gap:</dt><dd>{formatPreference(generation.largestAllowedGap, ',')}</dd></div>
             <div className="flex justify-between"><dt>Number of Days:</dt><dd>{generation.isNumberOfDaysSelected ? generation.numberOfDays : 'Not specified'}</dd></div>
             <div className="flex justify-between"><dt>Days Start:</dt><dd>{formatPreference(generation.daysStart)}</dd></div>
             <div className="flex justify-between"><dt>Days End:</dt><dd>{formatPreference(generation.daysEnd)}</dd></div>
@@ -161,10 +161,10 @@ export function AdminGenerationDetailsPage() {
                   {(generation.selectedCustomCourses ?? []).map((c, i) => (
                     <tr key={i} className="border-b border-white/5">
                       <td className="py-2">{c.courseCode}: {c.courseName}</td>
-                      <td className="py-2 text-[var(--dark-text)]">{c.customMainSection ?? '—'}</td>
-                      <td className="py-2 text-[var(--dark-text)]">{c.customSubSection ?? '—'}</td>
-                      <td className="py-2 text-[var(--dark-text)]">{c.customProfessor ?? '—'}</td>
-                      <td className="py-2 text-[var(--dark-text)]">{c.customTA ?? '—'}</td>
+                      <td className="py-2 text-[var(--dark-text)]">{c.customMainSection ?? ','}</td>
+                      <td className="py-2 text-[var(--dark-text)]">{c.customSubSection ?? ','}</td>
+                      <td className="py-2 text-[var(--dark-text)]">{c.customProfessor ?? ','}</td>
+                      <td className="py-2 text-[var(--dark-text)]">{c.customTA ?? ','}</td>
                     </tr>
                   ))}
                 </tbody>

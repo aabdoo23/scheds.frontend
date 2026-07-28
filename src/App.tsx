@@ -1,10 +1,10 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Navbar } from '@/components/layout/Navbar';
 import { HomePage } from '@/pages/HomePage';
 import { FindStudyRoomsPage } from '@/pages/FindStudyRoomsPage';
 import { SelfServiceSearchPage } from '@/pages/SelfServiceSearchPage';
-import { SeatModerationPage } from '@/pages/SeatModerationPage';
+import { SeatAlertsPage } from '@/pages/SeatAlertsPage';
 import { GenerateSchedulesPage } from '@/pages/GenerateSchedulesPage';
 import { AdminLoginPage } from '@/pages/AdminLoginPage';
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
@@ -23,7 +23,9 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/generate-schedules" element={<GenerateSchedulesPage />} />
         <Route path="/self-service-search" element={<SelfServiceSearchPage />} />
-        <Route path="/seat-moderation" element={<SeatModerationPage />} />
+        <Route path="/seat-alerts" element={<SeatAlertsPage />} />
+        {/* Old path: bookmarks and links in already-sent alert emails still use it. */}
+        <Route path="/seat-moderation" element={<Navigate to="/seat-alerts" replace />} />
         <Route path="/find-study-rooms" element={<FindStudyRoomsPage />} />
         <Route path="/contributors" element={<ContributorsPage />} />
         <Route path="/admin/login" element={<AdminLoginPage />} />

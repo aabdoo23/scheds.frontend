@@ -4,7 +4,7 @@ interface StatsCardsProps {
   avgAvailability: number;
 }
 
-// A compact inline summary strip — not hero-metric tiles. States the counts
+// A compact inline summary strip , not hero-metric tiles. States the counts
 // quietly above the results without a big-number template.
 export function StatsCards({ totalRooms, availableNow, avgAvailability }: StatsCardsProps) {
   return (

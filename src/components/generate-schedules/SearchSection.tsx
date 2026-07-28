@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { CustomCartItem } from '@/types/generate';
-import type { CourseSearchItem } from '@/types/seatModeration';
+import type { CourseSearchItem } from '@/types/seatAlerts';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';

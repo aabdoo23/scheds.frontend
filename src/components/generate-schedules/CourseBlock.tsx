@@ -80,7 +80,7 @@ export function CourseBlock({ item }: CourseBlockProps) {
       >
         {compact ? (
           <>
-            {/* short slot — the colored section becomes a labeled vertical band on the left */}
+            {/* short slot , the colored section becomes a labeled vertical band on the left */}
             <span
               className="shrink-0 w-9 flex flex-col items-center justify-center gap-0.5 px-1 leading-none text-center"
               style={{ backgroundColor: color.bg, color: color.text }}
@@ -146,7 +146,7 @@ export function CourseBlock({ item }: CourseBlockProps) {
             </div>
           </div>
           <dl className="flex flex-col gap-1.5 text-xs m-0">
-            <PopRow label="Section" value={`${item.subType} ${item.section}`.trim() || '—'} />
+            <PopRow label="Section" value={`${item.subType} ${item.section}`.trim() || ','} />
             <PopRow
               label="Time"
               value={
@@ -155,8 +155,8 @@ export function CourseBlock({ item }: CourseBlockProps) {
                   : 'Not scheduled'
               }
             />
-            <PopRow label="Room" value={item.room || '—'} />
-            <PopRow label="Instructor" value={item.instructorName || '—'} />
+            <PopRow label="Room" value={item.room || ','} />
+            <PopRow label="Instructor" value={item.instructorName || ','} />
             <PopRow label="Seats left" value={String(item.seatsLeft)} />
             <PopRow label="Credits" value={`${item.credits} CH`} />
           </dl>

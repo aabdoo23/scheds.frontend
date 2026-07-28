@@ -31,11 +31,11 @@ function initials(name: string): string {
 }
 
 function nodeAriaLabel(n: PlacedNode): string {
-  if (n.role) return `${n.name} — ${n.role}`;
+  if (n.role) return `${n.name} , ${n.role}`;
   const bits = [`${n.commits ?? 0} commits`];
   if (n.add) bits.push(`+${n.add.toLocaleString()} additions`);
   if (n.del) bits.push(`-${n.del.toLocaleString()} deletions`);
-  return `${n.name} — ${bits.join(', ')}`;
+  return `${n.name} , ${bits.join(', ')}`;
 }
 
 function OrbitNode({ n }: { n: PlacedNode }) {
@@ -133,7 +133,7 @@ export function ContributorsPage() {
 
   const nodes = useMemo<PlacedNode[]>(() => {
     // One constellation for everyone: commit contributors (ranked) then core team,
-    // all styled identically — spread by golden angle, sized by commits.
+    // all styled identically , spread by golden angle, sized by commits.
     const people: PlacedNode[] = [];
 
     ranked.forEach((c: Contributor) => {
@@ -192,7 +192,7 @@ export function ContributorsPage() {
     <main className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-5 text-[var(--light-text)]">
       <h1 className="text-2xl sm:text-3xl font-bold tracking-tight m-0 mb-1">Contributors</h1>
       <p className="text-[var(--dark-text)] m-0 mb-3">
-        The people building Scheds, in orbit around it — sized by commits.
+        The people building Scheds, in orbit around it , sized by commits.
       </p>
 
       {totals && (

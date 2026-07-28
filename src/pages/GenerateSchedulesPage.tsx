@@ -12,7 +12,13 @@ import { courseColor } from '@/lib/scheduleView';
 import { useGenerateCart } from '@/hooks/useGenerateCart';
 import { useGenerateRequest } from '@/hooks/useGenerateRequest';
 import { useCourseSearchDebounced } from '@/hooks/useCourseSearchDebounced';
-import type { GenerateRequest, ScheduleCardItem, CustomCartItem } from '@/types/generate';
+import type {
+  GenerateRequest,
+  GenerateResponse,
+  ScheduleCardItem,
+  CustomCartItem,
+  BusyTime,
+} from '@/types/generate';
 import { SearchSection } from '@/components/generate-schedules/SearchSection';
 import { CartList } from '@/components/generate-schedules/CartList';
 import { Button } from '@/components/ui/Button';
@@ -24,6 +30,12 @@ type GenerateStatus = 'idle' | 'loading' | 'success' | 'error';
 
 const RESULTS_KEY = 'scheds:generate-results';
 const SIGNATURE_KEY = 'scheds:generate-signature';
+const META_KEY = 'scheds:generate-meta';
+
+interface GenMeta {
+  explored: number;
+  truncated: boolean;
+}
 
 function loadStoredSchedules(): ScheduleCardItem[][] {
   try {
@@ -32,6 +44,19 @@ function loadStoredSchedules(): ScheduleCardItem[][] {
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
+  }
+}
+
+function loadStoredMeta(): GenMeta | null {
+  try {
+    const raw = sessionStorage.getItem(META_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (parsed && typeof parsed.explored === 'number') {
+      return { explored: parsed.explored, truncated: !!parsed.truncated };
+    }
+    return null;
+  } catch {
+    return null;
   }
 }
 
@@ -58,6 +83,7 @@ export function GenerateSchedulesPage() {
     schedules.length > 0 ? 'success' : 'idle'
   );
   const [generatedSignature, setGeneratedSignature] = useState<string | null>(loadStoredSignature);
+  const [genMeta, setGenMeta] = useState<GenMeta | null>(loadStoredMeta);
   const [genError, setGenError] = useState<string | null>(null);
   const generateLoading = genStatus === 'loading';
   const [searchLiveLoading, setSearchLiveLoading] = useState(false);
@@ -167,6 +193,7 @@ export function GenerateSchedulesPage() {
       excludedSubSections: c.excludedSubSections?.filter(Boolean),
       excludedProfessors: c.excludedProfessors?.filter(Boolean),
       excludedTAs: c.excludedTAs?.filter(Boolean),
+      preferredProfessors: c.preferredProfessors?.filter(Boolean),
     }));
 
     const isNumberOfDaysSelected = request.isNumberOfDaysSelected;
@@ -193,6 +220,18 @@ export function GenerateSchedulesPage() {
     generatedSignature !== null &&
     currentSignature !== generatedSignature;
 
+  // Busy blocks are drawn from the request that produced the shown results, not
+  // the live form , so editing them after generating never misrepresents the canvas.
+  const generatedBusyTimes = useMemo<BusyTime[]>(() => {
+    if (!generatedSignature) return [];
+    try {
+      const parsed = JSON.parse(generatedSignature);
+      return Array.isArray(parsed?.busyTimes) ? parsed.busyTimes : [];
+    } catch {
+      return [];
+    }
+  }, [generatedSignature]);
+
   const canGenerate = cart.length > 0 && request.daysStart < request.daysEnd;
 
   const scrollTo = useCallback((el: HTMLElement | null) => {
@@ -201,7 +240,7 @@ export function GenerateSchedulesPage() {
     el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   }, []);
 
-  // After a fresh generate, hand the viewport + focus to the results — this is the
+  // After a fresh generate, hand the viewport + focus to the results , this is the
   // payoff moment and it lives well below the fold.
   useEffect(() => {
     if (genStatus !== 'success' || !justGenerated.current) return;
@@ -230,16 +269,30 @@ export function GenerateSchedulesPage() {
       }
 
       const json = await res.json();
-      const data = Array.isArray(json) ? json : [];
+      // Envelope { schedules, explored, truncated }; fall back to a bare array.
+      const data: ScheduleCardItem[][] = Array.isArray(json)
+        ? json
+        : Array.isArray((json as GenerateResponse)?.schedules)
+          ? (json as GenerateResponse).schedules
+          : [];
+      const meta: GenMeta | null = Array.isArray(json)
+        ? null
+        : {
+            explored: (json as GenerateResponse)?.explored ?? data.length,
+            truncated: !!(json as GenerateResponse)?.truncated,
+          };
       justGenerated.current = true;
       setSchedules(data);
+      setGenMeta(meta);
       setGenStatus('success');
       setGeneratedSignature(signature);
       try {
         sessionStorage.setItem(RESULTS_KEY, JSON.stringify(data));
         sessionStorage.setItem(SIGNATURE_KEY, signature);
+        if (meta) sessionStorage.setItem(META_KEY, JSON.stringify(meta));
+        else sessionStorage.removeItem(META_KEY);
       } catch {
-        // storage full or unavailable — results still live in state this session
+        // storage full or unavailable , results still live in state this session
       }
     } catch {
       setGenError("Couldn't reach the server. Check your connection, then try again.");
@@ -253,7 +306,7 @@ export function GenerateSchedulesPage() {
         Generate schedules
       </h1>
 
-      {/* Sticky spine — keeps the cart and primary action in reach while scrolling */}
+      {/* Sticky spine , keeps the cart and primary action in reach while scrolling */}
       <PipelineSpine
         visible={spineVisible}
         cart={cart}
@@ -274,9 +327,9 @@ export function GenerateSchedulesPage() {
         </div>
       )}
 
-      {/* Set-up deck — selections + preferences on top */}
+      {/* Set-up deck , selections + preferences on top */}
       <div className="xl:grid xl:grid-cols-[2fr_3fr] xl:gap-6 xl:items-start mb-8">
-      {/* Stage 1 — Choose courses */}
+      {/* Stage 1 , Choose courses */}
       <section
         ref={coursesRef}
         aria-labelledby="stage-courses"
@@ -313,7 +366,7 @@ export function GenerateSchedulesPage() {
         </div>
       </section>
 
-      {/* Stage 2 — Set preferences */}
+      {/* Stage 2 , Set preferences */}
       <section
         ref={prefsRef}
         aria-labelledby="stage-prefs"
@@ -322,7 +375,7 @@ export function GenerateSchedulesPage() {
         <StageHeading
           id="stage-prefs"
           title="Set preferences"
-          hint="Defaults work for most students — adjust only what you care about."
+          hint="Defaults work for most students , adjust only what you care about."
           action={
             <Button variant="ghost" onClick={resetRequest} className="px-3 text-sm">
               <i className="fas fa-rotate-left mr-2" aria-hidden />
@@ -334,7 +387,7 @@ export function GenerateSchedulesPage() {
       </section>
       </div>
 
-      {/* Generate action — the seam between set-up and schedules */}
+      {/* Generate action , the seam between set-up and schedules */}
       <div className="mb-10">
         {cart.length === 0 ? (
           <div className="flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-[var(--lighter-dark)]/40 px-4 py-5 text-center">
@@ -371,7 +424,7 @@ export function GenerateSchedulesPage() {
         )}
       </div>
 
-      {/* Stage 3 — Schedules (full width) */}
+      {/* Stage 3 , Schedules (full width) */}
       <section
         ref={resultsRef}
         role="region"
@@ -429,7 +482,12 @@ export function GenerateSchedulesPage() {
                   </Button>
                 </div>
               )}
-              <SchedulesList schedules={schedules} />
+              <SchedulesList
+                schedules={schedules}
+                busyTimes={generatedBusyTimes}
+                explored={genMeta?.explored}
+                truncated={genMeta?.truncated}
+              />
               <MissingCourseHelp />
             </>
           ) : (
@@ -503,7 +561,7 @@ function MissingCourseHelp() {
       </summary>
       <ol className="m-0 px-4 pb-4 pl-9 flex flex-col gap-1.5 list-decimal text-sm text-[var(--dark-text)]">
         <li>
-          It may have no section that fits — loosen your preferences (days, hours, gaps) and generate
+          It may have no section that fits , loosen your preferences (days, hours, gaps) and generate
           again.
         </li>
         <li>
@@ -564,7 +622,7 @@ function PipelineSpine({
               ))}
             </span>
           )}
-          <span className="sr-only">courses in cart — jump to courses</span>
+          <span className="sr-only">courses in cart , jump to courses</span>
         </button>
         <div className="flex-1" />
         <Button

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { ScheduleCardItem } from '@/types/generate';
+import type { ScheduleCardItem, BusyTime } from '@/types/generate';
 import { Button } from '@/components/ui/Button';
 import { ScheduleCanvas } from './ScheduleCanvas';
 import { ScheduleRankList } from './ScheduleRankList';
@@ -16,10 +16,18 @@ import {
 
 interface SchedulesListProps {
   schedules: ScheduleCardItem[][];
+  busyTimes?: BusyTime[];
+  explored?: number;
+  truncated?: boolean;
 }
 
-export function SchedulesList({ schedules }: SchedulesListProps) {
-  const [sortKey, setSortKey] = useState<SortKey>('fewestDays');
+export function SchedulesList({
+  schedules,
+  busyTimes = [],
+  explored,
+  truncated,
+}: SchedulesListProps) {
+  const [sortKey, setSortKey] = useState<SortKey>('recommended');
   const [selected, setSelected] = useState<number | null>(null);
 
   const normalized = useMemo(
@@ -50,6 +58,13 @@ export function SchedulesList({ schedules }: SchedulesListProps) {
 
   const activeLabel = schedules.length > 1 ? `Schedule #${activeRank}` : 'Your schedule';
 
+  const poolNote =
+    explored && explored > schedules.length
+      ? truncated
+        ? `Showing the best ${schedules.length} , ranked from ${explored.toLocaleString()}+ combinations (search capped).`
+        : `Showing the best ${schedules.length} , ranked from all ${explored.toLocaleString()} that fit.`
+      : null;
+
   const canvasHeader = (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 mb-4">
       <div className="min-w-0">
@@ -72,13 +87,20 @@ export function SchedulesList({ schedules }: SchedulesListProps) {
     return (
       <div>
         {canvasHeader}
-        <ScheduleCanvas items={normalized[active]} />
+        <ScheduleCanvas items={normalized[active]} busyTimes={busyTimes} />
       </div>
     );
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)] xl:items-start">
+    <div>
+      {poolNote && (
+        <p className="text-[var(--dark-text)] text-sm m-0 mb-3 flex items-center gap-2">
+          <i className="fas fa-ranking-star text-[var(--dark-text)]" aria-hidden />
+          {poolNote}
+        </p>
+      )}
+      <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)] xl:items-start">
       <ScheduleRankList
         schedules={normalized}
         metrics={metrics}
@@ -90,7 +112,8 @@ export function SchedulesList({ schedules }: SchedulesListProps) {
       />
       <div className="rounded-xl bg-[var(--lighter-dark)] border border-white/10 p-4 sm:p-5 min-w-0">
         {canvasHeader}
-        <ScheduleCanvas items={normalized[active]} />
+        <ScheduleCanvas items={normalized[active]} busyTimes={busyTimes} />
+      </div>
       </div>
     </div>
   );
@@ -100,7 +123,7 @@ function ScheduleActions({ items, label }: { items: ScheduleCardItem[]; label: s
   const [copied, setCopied] = useState(false);
 
   const exportICS = () => {
-    const blob = new Blob([buildICS(items, `Scheds — ${label}`)], {
+    const blob = new Blob([buildICS(items, `Scheds , ${label}`)], {
       type: 'text/calendar;charset=utf-8',
     });
     const url = URL.createObjectURL(blob);
@@ -119,7 +142,7 @@ function ScheduleActions({ items, label }: { items: ScheduleCardItem[]; label: s
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // clipboard unavailable — silently no-op
+      // clipboard unavailable , silently no-op
     }
   };
 

@@ -100,7 +100,13 @@ export function ScheduleRankList({
                 >
                   #{rank + 1}
                 </span>
-                <span className="text-[var(--light-text)] text-sm font-semibold tabular-nums">
+                {sortKey === 'recommended' && rank === 0 && (
+                  <span className="inline-flex items-center gap-1 text-[var(--light-blue)] text-xs font-semibold">
+                    <i className="fas fa-star text-[0.6rem]" aria-hidden />
+                    Best overall
+                  </span>
+                )}
+                <span className="ml-auto text-[var(--light-text)] text-sm font-semibold tabular-nums">
                   {formatClock(m.earliestStart)} – {formatClock(m.latestEnd)}
                 </span>
               </div>

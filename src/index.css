@@ -24,6 +24,10 @@
   --card-cyan: #0e7490;
   --card-rose: #b83280;
   --card-brick: #a83a2b;
+  /* Ink for text sitting on a categorical hue. The hues are theme-independent,
+     so their ink must be too , never --light-text, which flips in light mode.
+     The two golds pair with --font-color-dark instead. */
+  --card-ink: #fcfcfc;
   --font-color: #eef0eb;
   --font-color-dark: #151515;
 }
@@ -88,7 +92,7 @@ body {
   animation: orbit-float 7s ease-in-out infinite;
 }
 
-/* Home hero — "the sort" choreography: grid blocks snap into their slots and the
+/* Home hero , "the sort" choreography: grid blocks snap into their slots and the
    section cards stream up the current out of the grid. The global reduced-motion
    rule above neutralizes the animations; the initial hidden state below lives inside
    a no-preference query so blocks/cards stay visible when motion is reduced. */
@@ -140,15 +144,15 @@ body {
 .sort-card-face {
   transition: box-shadow 0.35s ease, border-color 0.35s ease;
 }
-/* settle — snaps level and lifts, like a section dropping into its slot */
+/* settle , snaps level and lifts, like a section dropping into its slot */
 .sort-card:hover .sort-card-inner[data-hover='settle'] {
   transform: rotate(0deg) translateY(-12px);
 }
-/* lift — leans forward and rises, the section you're reaching for */
+/* lift , leans forward and rises, the section you're reaching for */
 .sort-card:hover .sort-card-inner[data-hover='lift'] {
   transform: rotate(var(--rot, 0deg)) translateY(-13px) scale(1.035);
 }
-/* tilt — faces the cursor in 3D; --rx/--ry written by pointer handler, eased back on leave */
+/* tilt , faces the cursor in 3D; --rx/--ry written by pointer handler, eased back on leave */
 .sort-card-inner[data-hover='tilt'] {
   transform: rotate(var(--rot, 0deg)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
   transition: transform 0.18s ease-out;
@@ -158,7 +162,7 @@ body {
   border-color: rgba(255, 255, 255, 0.22);
 }
 
-/* The schedule hub — hovering re-runs the sort: blocks burst outward, then reassemble.
+/* The schedule hub , hovering re-runs the sort: blocks burst outward, then reassemble.
    The colored fill sits on an inner .blk-fill so its explosion transform is free of the
    sort-pop fill-mode that owns the outer .sort-blk transform. */
 .schedule-hub {

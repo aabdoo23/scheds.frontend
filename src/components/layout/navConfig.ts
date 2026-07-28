@@ -8,7 +8,7 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { to: '/generate-schedules', label: 'Generate Schedules', shortLabel: 'Generate', primary: true },
   { to: '/self-service-search', label: 'Self Service Search', shortLabel: 'Search' },
-  { to: '/seat-moderation', label: 'Seat Moderation', shortLabel: 'Moderation' },
+  { to: '/seat-alerts', label: 'Seat Alerts', shortLabel: 'Alerts' },
   { to: '/find-study-rooms', label: 'Find Study Rooms', shortLabel: 'Rooms' },
   { to: '/contributors', label: 'Contributors', shortLabel: 'Contributors' },
 ];

@@ -8,7 +8,7 @@ import {
   itemKey,
 } from '@/lib/scheduleView';
 
-// Decorative miniature of the week shape — the row's metrics carry the meaning.
+// Decorative miniature of the week shape , the row's metrics carry the meaning.
 // Mirrors the hero's schedule hub: a ruled --lighter-dark track with inset, rounded
 // course-colored tiles, so a generated schedule reads as the same object across the app.
 export function SchedulePreview({ items }: { items: ScheduleCardItem[] }) {

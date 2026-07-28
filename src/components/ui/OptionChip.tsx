@@ -1,6 +1,6 @@
 // One chip for every pick control across the app. The native input type drives
 // semantics (screen readers announce radio-group vs checkbox); the indicator
-// SHAPE is the visual cue — a circle for single-select (radio), a square for
+// SHAPE is the visual cue , a circle for single-select (radio), a square for
 // multi-select (checkbox). Selected state fills the indicator and tints the chip.
 interface OptionChipProps {
   type: 'radio' | 'checkbox';

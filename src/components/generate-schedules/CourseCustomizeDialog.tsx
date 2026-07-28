@@ -146,6 +146,7 @@ export function CourseCustomizeDialog({
   const excludedSub = item.excludedSubSections ?? [];
   const excludedProf = item.excludedProfessors ?? [];
   const excludedTa = item.excludedTAs ?? [];
+  const preferredProf = item.preferredProfessors ?? [];
 
   const setExcluded = (key: ExcludeKey, value: string[]) => {
     onUpdate({ ...item, [key]: value });
@@ -159,6 +160,29 @@ export function CourseCustomizeDialog({
   const keepOnly = (key: ExcludeKey, value: string, all: string[]) => {
     setExcluded(key, all.filter((v) => v !== value));
   };
+
+  // Excluding a professor drops any preference for them (can't favor a skipped prof).
+  const toggleExcludeProf = (value: string) => {
+    const isExcluded = excludedProf.includes(value);
+    onUpdate({
+      ...item,
+      excludedProfessors: isExcluded
+        ? excludedProf.filter((x) => x !== value)
+        : [...excludedProf, value],
+      preferredProfessors: isExcluded ? preferredProf : preferredProf.filter((x) => x !== value),
+    });
+  };
+  // Preferring a professor implies keeping them (removes any exclusion).
+  const togglePrefer = (value: string) => {
+    const isPref = preferredProf.includes(value);
+    onUpdate({
+      ...item,
+      preferredProfessors: isPref
+        ? preferredProf.filter((x) => x !== value)
+        : [...preferredProf, value],
+      excludedProfessors: isPref ? excludedProf : excludedProf.filter((x) => x !== value),
+    });
+  };
   const resetAll = () => {
     onUpdate({
       ...item,
@@ -166,6 +190,7 @@ export function CourseCustomizeDialog({
       excludedSubSections: [],
       excludedProfessors: [],
       excludedTAs: [],
+      preferredProfessors: [],
     });
   };
 
@@ -174,6 +199,7 @@ export function CourseCustomizeDialog({
     title: string;
     excluded: string[];
     options: { value: string; label: string; desc?: string }[];
+    prefer?: boolean;
   }[] = [
     {
       key: 'excludedMainSections',
@@ -200,6 +226,7 @@ export function CourseCustomizeDialog({
       title: 'Professors',
       excluded: excludedProf,
       options: professors.map((p) => ({ value: p, label: p })),
+      prefer: true,
     },
     {
       key: 'excludedTAs',
@@ -216,6 +243,7 @@ export function CourseCustomizeDialog({
     0
   );
   const anyExcluded = groups.some((g) => g.excluded.length > 0);
+  const anyCustomized = anyExcluded || preferredProf.length > 0;
 
   return (
     <dialog
@@ -326,6 +354,12 @@ export function CourseCustomizeDialog({
                           </button>
                         </div>
                       </div>
+                      {g.prefer && (
+                        <p className="text-[var(--dark-text)] text-xs m-0 mb-2.5 flex items-center gap-1.5">
+                          <i className="fas fa-star text-[var(--light-blue)] text-[0.6rem]" aria-hidden />
+                          Star a professor to rank their schedules higher , a preference, never required.
+                        </p>
+                      )}
                       {showFilter && (
                         <input
                           type="text"
@@ -339,16 +373,39 @@ export function CourseCustomizeDialog({
                         />
                       )}
                       <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
-                        {shown.map((o) => (
+                        {shown.map((o) => {
+                          const kept = !g.excluded.includes(o.value);
+                          const preferred = g.prefer && preferredProf.includes(o.value);
+                          return (
                           <div key={o.value} className="flex items-stretch gap-1">
                             <OptionChip
                               type="checkbox"
                               label={o.label}
                               desc={o.desc}
-                              checked={!g.excluded.includes(o.value)}
-                              onChange={() => toggle(g.key, g.excluded, o.value)}
+                              checked={kept}
+                              onChange={() =>
+                                g.prefer
+                                  ? toggleExcludeProf(o.value)
+                                  : toggle(g.key, g.excluded, o.value)
+                              }
                               className="flex-1"
                             />
+                            {g.prefer && kept && (
+                              <button
+                                type="button"
+                                onClick={() => togglePrefer(o.value)}
+                                aria-pressed={preferred}
+                                title={preferred ? `Stop preferring ${o.label}` : `Prefer ${o.label}`}
+                                aria-label={preferred ? `Stop preferring ${o.label}` : `Prefer ${o.label}`}
+                                className={`shrink-0 w-11 min-h-[44px] flex items-center justify-center rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--light-blue)] ${
+                                  preferred
+                                    ? 'border-[var(--light-blue)] bg-[var(--light-blue)]/15 text-[var(--light-blue)]'
+                                    : 'border-white/10 bg-white/[0.02] text-[var(--dark-text)] hover:text-[var(--light-text)] hover:border-[var(--light-blue)]'
+                                }`}
+                              >
+                                <i className="fas fa-star text-xs" aria-hidden />
+                              </button>
+                            )}
                             {showOnly && (
                               <button
                                 type="button"
@@ -363,7 +420,8 @@ export function CourseCustomizeDialog({
                               </button>
                             )}
                           </div>
-                        ))}
+                          );
+                        })}
                         {shown.length === 0 && (
                           <p className="text-[var(--dark-text)] text-xs m-0 py-1">
                             No matches.
@@ -372,7 +430,7 @@ export function CourseCustomizeDialog({
                       </div>
                       {keptCount === 0 && (
                         <p role="alert" className="text-[var(--btn-danger)] text-xs mt-2 m-0">
-                          Nothing kept here — this course can’t be scheduled until you keep at least one.
+                          Nothing kept here , this course can’t be scheduled until you keep at least one.
                         </p>
                       )}
                     </fieldset>
@@ -383,7 +441,7 @@ export function CourseCustomizeDialog({
         </div>
 
         <div className="flex justify-between items-center gap-3 p-5 border-t border-white/10 shrink-0">
-          <Button variant="secondary" onClick={resetAll} disabled={!anyExcluded}>
+          <Button variant="secondary" onClick={resetAll} disabled={!anyCustomized}>
             Reset
           </Button>
           <Button onClick={onClose}>Done</Button>

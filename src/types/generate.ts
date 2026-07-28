@@ -13,6 +13,14 @@ export interface ScheduleCardItem {
   seatsLeft: number;
 }
 
+// Response envelope from POST /api/generate. `schedules` is ranked best-first;
+// `explored`/`truncated` describe how much of the combination space was searched.
+export interface GenerateResponse {
+  schedules: ScheduleCardItem[][];
+  explored: number;
+  truncated: boolean;
+}
+
 export interface CustomCartItem {
   courseCode: string;
   courseName: string;
@@ -20,6 +28,17 @@ export interface CustomCartItem {
   excludedSubSections?: string[];
   excludedProfessors?: string[];
   excludedTAs?: string[];
+  // Soft preference: lecture instructors to favor for this course. Never filters ,
+  // schedules taught by one of these rank higher.
+  preferredProfessors?: string[];
+}
+
+// A block of time the student is unavailable , treated like a fixed phantom
+// class the generator schedules around. `day` matches selectedDays: 0=Sat … 5=Thu.
+export interface BusyTime {
+  day: number;
+  startTime: string; // "HH:mm"
+  endTime: string; // "HH:mm"
 }
 
 export interface GenerateRequest {
@@ -31,9 +50,10 @@ export interface GenerateRequest {
   numberOfDays: number;
   maxNumberOfGeneratedSchedules: number;
   useLiveData: boolean;
-  considerZeroSeats: boolean;
+  requireOpenSeats: boolean;
   isNumberOfDaysSelected: boolean;
   isEngineering: boolean;
+  busyTimes: BusyTime[];
   selectedItems: { courseCode: string; courseName: string }[];
   customSelectedItems: CustomCartItem[];
 }

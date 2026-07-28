@@ -29,7 +29,8 @@ function hasCustomSelection(item: CustomCartItem): boolean {
     has(item.excludedMainSections) ||
     has(item.excludedSubSections) ||
     has(item.excludedProfessors) ||
-    has(item.excludedTAs)
+    has(item.excludedTAs) ||
+    has(item.preferredProfessors)
   );
 }
 
@@ -50,6 +51,7 @@ export function useGenerateCart() {
         excludedSubSections: item.excludedSubSections?.filter(Boolean),
         excludedProfessors: item.excludedProfessors?.filter(Boolean),
         excludedTAs: item.excludedTAs?.filter(Boolean),
+        preferredProfessors: item.preferredProfessors?.filter(Boolean),
       };
 
       const persist = () => {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchWithCredentials } from '@/lib/api';
-import type { CourseSearchItem } from '@/types/seatModeration';
+import type { CourseSearchItem } from '@/types/seatAlerts';
 
 interface ApiCourse {
   CourseCode?: string;

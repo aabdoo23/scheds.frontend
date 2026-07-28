@@ -41,7 +41,7 @@ export function SelfServiceSearchPage() {
     <main className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 text-[var(--light-text)]">
       <h1 className="text-2xl sm:text-3xl font-bold tracking-tight m-0 mb-1">Search for courses</h1>
       <p className="text-[var(--dark-text)] m-0 mb-6">
-        Look up any section straight from NU Self-Service — by code, name, or instructor.
+        Look up any section straight from NU Self-Service , by code, name, or instructor.
       </p>
 
       <SearchSection

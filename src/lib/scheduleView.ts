@@ -16,17 +16,19 @@ export const DAY_START_MIN = 8 * 60 + 30;
 export const DAY_END_MIN = 20 * 60 + 30;
 export const DAY_SPAN_MIN = DAY_END_MIN - DAY_START_MIN;
 
-// Eight perceptually distinct hues — mirrors the --card-* tokens in index.css.
-// Dark hues carry white text; the two golds carry ink.
+// Eight perceptually distinct hues , mirrors the --card-* tokens in index.css.
+// Dark hues carry white ink; the two golds carry dark ink. Both ink tokens are
+// theme-independent, like the hues they sit on , a theme-flipping token here
+// would invert the ink while the background stayed put.
 export const COURSE_PALETTE = [
-  { bg: 'var(--card-blue)', text: 'var(--light-text)' },
-  { bg: 'var(--card-green)', text: 'var(--light-text)' },
-  { bg: 'var(--card-purple)', text: 'var(--light-text)' },
+  { bg: 'var(--card-blue)', text: 'var(--card-ink)' },
+  { bg: 'var(--card-green)', text: 'var(--card-ink)' },
+  { bg: 'var(--card-purple)', text: 'var(--card-ink)' },
   { bg: 'var(--card-yellow)', text: 'var(--font-color-dark)' },
   { bg: 'var(--card-brown)', text: 'var(--font-color-dark)' },
-  { bg: 'var(--card-cyan)', text: 'var(--light-text)' },
-  { bg: 'var(--card-rose)', text: 'var(--light-text)' },
-  { bg: 'var(--card-brick)', text: 'var(--light-text)' },
+  { bg: 'var(--card-cyan)', text: 'var(--card-ink)' },
+  { bg: 'var(--card-rose)', text: 'var(--card-ink)' },
+  { bg: 'var(--card-brick)', text: 'var(--card-ink)' },
 ];
 
 // Deterministic per-course color so a course keeps its hue across every schedule.
@@ -124,9 +126,15 @@ export function scheduleMetrics(items: ScheduleCardItem[]): ScheduleMetrics {
   };
 }
 
-export type SortKey = 'fewestDays' | 'leastGaps' | 'latestStart' | 'earliestFinish';
+export type SortKey =
+  | 'recommended'
+  | 'fewestDays'
+  | 'leastGaps'
+  | 'latestStart'
+  | 'earliestFinish';
 
 export const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'recommended', label: 'Recommended' },
   { key: 'fewestDays', label: 'Fewest days' },
   { key: 'leastGaps', label: 'Least gaps' },
   { key: 'latestStart', label: 'Latest start' },
@@ -139,9 +147,12 @@ interface Ranked {
 }
 
 // Given per-schedule metrics, return original indices in ranked order.
+// 'recommended' preserves server order , the results already arrive ranked
+// best-first by the backend's composite cost.
 export function rankOrder(metricsList: ScheduleMetrics[], key: SortKey): number[] {
+  if (key === 'recommended') return metricsList.map((_, i) => i);
   const ranked: Ranked[] = metricsList.map((m, i) => ({ i, m }));
-  const comparators: Record<SortKey, (a: Ranked, b: Ranked) => number> = {
+  const comparators: Record<Exclude<SortKey, 'recommended'>, (a: Ranked, b: Ranked) => number> = {
     fewestDays: (a, b) =>
       a.m.daysOnCampus - b.m.daysOnCampus || a.m.gapMinutes - b.m.gapMinutes,
     leastGaps: (a, b) =>
@@ -173,7 +184,7 @@ export function itemKey(item: ScheduleCardItem): string {
 }
 
 export function formatClock(min: number | null): string {
-  if (min === null) return '—';
+  if (min === null) return ',';
   const h = Math.floor(min / 60);
   const m = Math.round(min % 60);
   const h12 = h % 12 || 12;
@@ -199,12 +210,20 @@ export function formatDays(n: number): string {
   return `${n} day${n === 1 ? '' : 's'} on campus`;
 }
 
-// Position of an item within the canvas time window, as 0–1 fractions.
-// The canvas enforces a readable minimum height in CSS.
-export function blockPosition(item: ScheduleCardItem): { top: number; height: number } {
-  const start = parseTimeToMinutes(item.startTime);
-  const end = parseTimeToMinutes(item.endTime);
+// Position of an arbitrary time range within the canvas window, as 0–1 fractions.
+export function rangePosition(
+  startTime: string,
+  endTime: string
+): { top: number; height: number } {
+  const start = parseTimeToMinutes(startTime);
+  const end = parseTimeToMinutes(endTime);
   const top = Math.min(1, Math.max(0, (start - DAY_START_MIN) / DAY_SPAN_MIN));
   const height = Math.min(1 - top, Math.max(0, (end - start) / DAY_SPAN_MIN));
   return { top, height };
+}
+
+// Position of an item within the canvas time window, as 0–1 fractions.
+// The canvas enforces a readable minimum height in CSS.
+export function blockPosition(item: ScheduleCardItem): { top: number; height: number } {
+  return rangePosition(item.startTime, item.endTime);
 }

@@ -13,13 +13,17 @@ interface CartListProps {
 }
 
 function customSummary(item: CustomCartItem): string {
-  const parts: string[] = [];
   const n = (a?: string[]) => (a ? a.filter(Boolean).length : 0);
-  if (n(item.excludedMainSections)) parts.push(`${n(item.excludedMainSections)} lecture`);
-  if (n(item.excludedSubSections)) parts.push(`${n(item.excludedSubSections)} lab/tut`);
-  if (n(item.excludedProfessors)) parts.push(`${n(item.excludedProfessors)} prof`);
-  if (n(item.excludedTAs)) parts.push(`${n(item.excludedTAs)} TA`);
-  return parts.length ? `${parts.join(', ')} excluded` : '';
+  const excluded: string[] = [];
+  if (n(item.excludedMainSections)) excluded.push(`${n(item.excludedMainSections)} lecture`);
+  if (n(item.excludedSubSections)) excluded.push(`${n(item.excludedSubSections)} lab/tut`);
+  if (n(item.excludedProfessors)) excluded.push(`${n(item.excludedProfessors)} prof`);
+  if (n(item.excludedTAs)) excluded.push(`${n(item.excludedTAs)} TA`);
+  const clauses: string[] = [];
+  if (excluded.length) clauses.push(`${excluded.join(', ')} excluded`);
+  const pref = n(item.preferredProfessors);
+  if (pref) clauses.push(`${pref} preferred prof${pref > 1 ? 's' : ''}`);
+  return clauses.join(' · ');
 }
 
 export function CartList({

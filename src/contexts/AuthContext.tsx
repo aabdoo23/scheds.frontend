@@ -18,7 +18,7 @@ import { API_BASE, fetchWithCredentials } from '@/lib/api';
 
 interface AuthState {
   token: string | null;
-  user: { name: string } | null;
+  user: { name: string; email: string | null } | null;
   loading: boolean;
 }
 
@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTokenState] = useState<string | null>(() =>
     getAccessToken()
   );
-  const [user, setUser] = useState<{ name: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchUser = useCallback(async () => {
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await fetchWithCredentials('/api/auth/me');
     if (res.ok) {
       const data = await res.json();
-      setUser(data);
+      setUser({ name: data.name, email: data.email ?? null });
     } else {
       setUser(null);
       if (!getAccessToken()) setTokenState(null);
